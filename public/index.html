@@ -193,80 +193,62 @@ const sitemapHistory = [
     { date: '24 Jan', allkeyshop: 844567, ggdeals: 620678, itad: 233478, dlcompare: 311856 },
 ];
 
-// ===== STATUS CHECKER DATA =====
+// ===== STATUS CHECKER DATA (REAL URLs) =====
 const serviceStatus = {
     'AllKeyShop': {
         logo: '🔵',
         domain: 'allkeyshop.com',
         services: [
-            {
-                name: 'Main Website',
-                url: 'https://www.allkeyshop.com/blog/',
-                status: 'online',
-                lastCheck: '30 Jan 2026, 16:55',
-                responseTime: 234
-            },
-            {
-                name: 'Reward Program',
-                url: 'https://www.allkeyshop.com/blog/reward-program/',
-                status: 'online',
-                lastCheck: '30 Jan 2026, 16:55',
-                responseTime: 312
-            },
-            {
-                name: 'Vouchers Page',
-                url: 'https://www.allkeyshop.com/blog/vouchers/',
-                status: 'online',
-                lastCheck: '30 Jan 2026, 16:55',
-                responseTime: 287
-            },
-            {
-                name: 'Coupons - All',
-                url: 'https://www.allkeyshop.com/blog/promo-codes/',
-                status: 'online',
-                lastCheck: '30 Jan 2026, 16:55',
-                responseTime: 345
-            },
+            { name: 'Main Website', url: 'https://www.allkeyshop.com/blog/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Reward Program', url: 'https://www.allkeyshop.com/blog/reward-program/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Vouchers Page', url: 'https://www.allkeyshop.com/blog/vouchers/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games Catalog', url: 'https://www.allkeyshop.com/blog/games/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Gift Cards', url: 'https://www.allkeyshop.com/blog/catalogue/category-giftcards/', status: 'online', lastCheck: null, responseTime: null },
         ],
         merchantVouchers: [
-            { merchant: 'CDKeys', url: 'https://www.allkeyshop.com/blog/cdkeys-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Instant Gaming', url: 'https://www.allkeyshop.com/blog/instant-gaming-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'G2A', url: 'https://www.allkeyshop.com/blog/g2a-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Kinguin', url: 'https://www.allkeyshop.com/blog/kinguin-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Eneba', url: 'https://www.allkeyshop.com/blog/eneba-voucher-codes/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404 Not Found' },
-            { merchant: 'Fanatical', url: 'https://www.allkeyshop.com/blog/fanatical-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Gamesplanet', url: 'https://www.allkeyshop.com/blog/gamesplanet-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'HRK Game', url: 'https://www.allkeyshop.com/blog/hrk-game-voucher-codes/', status: 'warning', lastCheck: '30 Jan 2026, 16:54', error: 'WordPress: No content found' },
-            { merchant: 'Gamivo', url: 'https://www.allkeyshop.com/blog/gamivo-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Green Man Gaming', url: 'https://www.allkeyshop.com/blog/green-man-gaming-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'PremiumCDkeys', url: 'https://www.allkeyshop.com/blog/vouchers/premiumcdkeys/', status: 'pending', lastCheck: null },
+            { merchant: 'Keys4us', url: 'https://www.allkeyshop.com/blog/vouchers/keys4us/', status: 'pending', lastCheck: null },
+            { merchant: '2Game', url: 'https://www.allkeyshop.com/blog/vouchers/2game/', status: 'pending', lastCheck: null },
+            { merchant: 'Driffle', url: 'https://www.allkeyshop.com/blog/vouchers/driffle/', status: 'pending', lastCheck: null },
+            { merchant: 'Gamivo', url: 'https://www.allkeyshop.com/blog/vouchers/gamivo/', status: 'pending', lastCheck: null },
+            { merchant: 'K4G', url: 'https://www.allkeyshop.com/blog/vouchers/k4g/', status: 'pending', lastCheck: null },
+            { merchant: 'Eneba', url: 'https://www.allkeyshop.com/blog/vouchers/eneba/', status: 'pending', lastCheck: null },
+            { merchant: 'HRK', url: 'https://www.allkeyshop.com/blog/vouchers/hrk/', status: 'pending', lastCheck: null },
+            { merchant: 'Kinguin', url: 'https://www.allkeyshop.com/blog/vouchers/kinguin/', status: 'pending', lastCheck: null },
+            { merchant: 'GAMESEAL', url: 'https://www.allkeyshop.com/blog/vouchers/gameseal/', status: 'pending', lastCheck: null },
+            { merchant: 'BuyGames', url: 'https://www.allkeyshop.com/blog/vouchers/buygames/', status: 'pending', lastCheck: null },
+            { merchant: 'Bitcodes', url: 'https://www.allkeyshop.com/blog/vouchers/bitcodes/', status: 'pending', lastCheck: null },
         ]
     },
     'GG.deals': {
         logo: '🟢',
         domain: 'gg.deals',
         services: [
-            { name: 'Main Website', url: 'https://gg.deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 189 },
-            { name: 'Deals Page', url: 'https://gg.deals/deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 234 },
-            { name: 'Price History', url: 'https://gg.deals/price-history/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 312 },
-            { name: 'Vouchers', url: 'https://gg.deals/vouchers/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 278 },
+            { name: 'Main Website', url: 'https://gg.deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals Page', url: 'https://gg.deals/deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games', url: 'https://gg.deals/games/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Vouchers', url: 'https://gg.deals/vouchers/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'News', url: 'https://gg.deals/news/', status: 'online', lastCheck: null, responseTime: null },
         ],
         merchantVouchers: [
-            { merchant: 'CDKeys', url: 'https://gg.deals/vouchers/cdkeys/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Instant Gaming', url: 'https://gg.deals/vouchers/instant-gaming/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'G2A', url: 'https://gg.deals/vouchers/g2a/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Kinguin', url: 'https://gg.deals/vouchers/kinguin/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Eneba', url: 'https://gg.deals/vouchers/eneba/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
-            { merchant: 'Fanatical', url: 'https://gg.deals/vouchers/fanatical/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Kinguin', url: 'https://gg.deals/vouchers/kinguin/', status: 'pending', lastCheck: null },
+            { merchant: 'Driffle', url: 'https://gg.deals/vouchers/driffle/', status: 'pending', lastCheck: null },
+            { merchant: 'G2A', url: 'https://gg.deals/vouchers/g2a/', status: 'pending', lastCheck: null },
+            { merchant: 'GAMIVO', url: 'https://gg.deals/vouchers/gamivo/', status: 'pending', lastCheck: null },
+            { merchant: 'K4G', url: 'https://gg.deals/vouchers/k4g/', status: 'pending', lastCheck: null },
+            { merchant: 'CDKeys', url: 'https://gg.deals/vouchers/cdkeys/', status: 'pending', lastCheck: null },
+            { merchant: 'Yuplay', url: 'https://gg.deals/vouchers/yuplay/', status: 'pending', lastCheck: null },
+            { merchant: 'Green Man Gaming', url: 'https://gg.deals/vouchers/green-man-gaming/', status: 'pending', lastCheck: null },
         ]
     },
     'IsThereAnyDeal': {
         logo: '🟡',
         domain: 'isthereanydeal.com',
         services: [
-            { name: 'Main Website', url: 'https://isthereanydeal.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 267 },
-            { name: 'Deals', url: 'https://isthereanydeal.com/deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 345 },
-            { name: 'Waitlist', url: 'https://isthereanydeal.com/waitlist/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 289 },
-            { name: 'API', url: 'https://api.isthereanydeal.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 156 },
+            { name: 'Main Website', url: 'https://isthereanydeal.com/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals', url: 'https://isthereanydeal.com/deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Specials', url: 'https://isthereanydeal.com/specials/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Giveaways', url: 'https://isthereanydeal.com/giveaways/', status: 'online', lastCheck: null, responseTime: null },
         ],
         merchantVouchers: []
     },
@@ -274,27 +256,23 @@ const serviceStatus = {
         logo: '🦈',
         domain: 'cheapshark.com',
         services: [
-            { name: 'Main Website', url: 'https://www.cheapshark.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 345 },
-            { name: 'Deals API', url: 'https://www.cheapshark.com/api/1.0/deals', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 189 },
-            { name: 'Stores API', url: 'https://www.cheapshark.com/api/1.0/stores', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 145 },
-            { name: 'Games API', url: 'https://www.cheapshark.com/api/1.0/games', status: 'warning', lastCheck: '30 Jan 2026, 16:55', responseTime: 2345, error: 'Slow response (>2s)' },
+            { name: 'Main Website', url: 'https://www.cheapshark.com/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals API', url: 'https://www.cheapshark.com/api/1.0/deals', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Stores API', url: 'https://www.cheapshark.com/api/1.0/stores', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games API', url: 'https://www.cheapshark.com/api/1.0/games', status: 'online', lastCheck: null, responseTime: null },
         ],
         merchantVouchers: []
     },
     'DLCompare': {
         logo: '🔴',
-        domain: 'dlcompare.com',
+        domain: 'dlcompare.fr',
         services: [
-            { name: 'Main Website', url: 'https://www.dlcompare.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 423 },
-            { name: 'Blog', url: 'https://www.dlcompare.com/blog/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 567 },
-            { name: 'Bons Plans', url: 'https://www.dlcompare.com/bons-plans/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 489 },
-            { name: 'Codes Promo', url: 'https://www.dlcompare.com/codes-promo/', status: 'offline', lastCheck: '30 Jan 2026, 16:55', error: '404 Not Found' },
+            { name: 'Main Website', url: 'https://www.dlcompare.fr/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Jeux PC', url: 'https://www.dlcompare.fr/jeux-pc/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Bons Plans', url: 'https://www.dlcompare.fr/bons-plans/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Actualités', url: 'https://www.dlcompare.fr/actualites/', status: 'online', lastCheck: null, responseTime: null },
         ],
-        merchantVouchers: [
-            { merchant: 'CDKeys', url: 'https://www.dlcompare.com/codes-promo/cdkeys/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
-            { merchant: 'Instant Gaming', url: 'https://www.dlcompare.com/codes-promo/instant-gaming/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
-            { merchant: 'Eneba', url: 'https://www.dlcompare.com/codes-promo/eneba/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
-        ]
+        merchantVouchers: []
     }
 };
 
@@ -333,10 +311,10 @@ function App() {
 }
 
 function Sidebar({ currentPage, setCurrentPage }) {
-    const offlineCount = Object.values(serviceStatus).reduce((acc, site) => {
-        const mainOffline = site.services.filter(s => s.status === 'offline' || s.status === 'warning').length;
-        const merchantOffline = site.merchantVouchers.filter(m => m.status === 'offline' || m.status === 'warning').length;
-        return acc + mainOffline + merchantOffline;
+    const alertCount = Object.values(serviceStatus).reduce((acc, site) => {
+        const mainAlerts = site.services.filter(s => s.status === 'offline' || s.status === 'warning').length;
+        const merchantAlerts = site.merchantVouchers.filter(m => m.status === 'offline' || m.status === 'warning').length;
+        return acc + mainAlerts + merchantAlerts;
     }, 0);
 
     const menuItems = [
@@ -345,7 +323,7 @@ function Sidebar({ currentPage, setCurrentPage }) {
         { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
         { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
-        { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: offlineCount > 0 ? offlineCount : null },
+        { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: alertCount > 0 ? alertCount : null },
         { id: 'alerts', label: 'Alertes', icon: 'fa-bell', badge: recentAlerts.filter(a => a.severity === 'high').length },
         { id: 'settings', label: 'Paramètres', icon: 'fa-cog' },
     ];
@@ -830,6 +808,7 @@ function StatusChecker() {
             case 'online': return <span className="text-green-400"><i className="fas fa-check-circle"></i></span>;
             case 'offline': return <span className="text-red-400"><i className="fas fa-times-circle"></i></span>;
             case 'warning': return <span className="text-yellow-400"><i className="fas fa-exclamation-triangle"></i></span>;
+            case 'pending': return <span className="text-blue-400"><i className="fas fa-clock"></i></span>;
             default: return <span className="text-gray-400"><i className="fas fa-question-circle"></i></span>;
         }
     };
@@ -839,6 +818,7 @@ function StatusChecker() {
             case 'online': return 'bg-green-500/10 border-green-500/30';
             case 'offline': return 'bg-red-500/10 border-red-500/30';
             case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
+            case 'pending': return 'bg-blue-500/10 border-blue-500/30';
             default: return 'bg-gray-500/10 border-gray-500/30';
         }
     };
@@ -852,6 +832,9 @@ function StatusChecker() {
     }, 0);
     const warningCount = Object.values(serviceStatus).reduce((acc, site) => {
         return acc + site.services.filter(s => s.status === 'warning').length + site.merchantVouchers.filter(m => m.status === 'warning').length;
+    }, 0);
+    const pendingCount = Object.values(serviceStatus).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'pending').length + site.merchantVouchers.filter(m => m.status === 'pending').length;
     }, 0);
 
     return (
@@ -873,7 +856,7 @@ function StatusChecker() {
             </div>
 
             {/* Stats globales */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-5 gap-4 mb-6">
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Total services</div>
                     <div className="text-2xl font-bold">{totalServices}</div>
@@ -881,6 +864,10 @@ function StatusChecker() {
                 <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
                     <div className="text-sm text-green-400 mb-1"><i className="fas fa-check-circle mr-1"></i>En ligne</div>
                     <div className="text-2xl font-bold text-green-400">{onlineCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
+                    <div className="text-sm text-blue-400 mb-1"><i className="fas fa-clock mr-1"></i>En attente</div>
+                    <div className="text-2xl font-bold text-blue-400">{pendingCount}</div>
                 </div>
                 <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
                     <div className="text-sm text-yellow-400 mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>Warnings</div>
@@ -899,6 +886,7 @@ function StatusChecker() {
                     const siteOffline = siteData.services.filter(s => s.status === 'offline').length + siteData.merchantVouchers.filter(m => m.status === 'offline').length;
                     const siteWarning = siteData.services.filter(s => s.status === 'warning').length + siteData.merchantVouchers.filter(m => m.status === 'warning').length;
                     const siteOnline = siteData.services.filter(s => s.status === 'online').length + siteData.merchantVouchers.filter(m => m.status === 'online').length;
+                    const sitePending = siteData.services.filter(s => s.status === 'pending').length + siteData.merchantVouchers.filter(m => m.status === 'pending').length;
                     const totalSiteServices = siteData.services.length + siteData.merchantVouchers.length;
 
                     return (
@@ -917,7 +905,8 @@ function StatusChecker() {
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-2 text-sm">
-                                        <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">{siteOnline} <i className="fas fa-check"></i></span>
+                                        {siteOnline > 0 && <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">{siteOnline} <i className="fas fa-check"></i></span>}
+                                        {sitePending > 0 && <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400">{sitePending} <i className="fas fa-clock"></i></span>}
                                         {siteWarning > 0 && <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">{siteWarning} <i className="fas fa-exclamation"></i></span>}
                                         {siteOffline > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteOffline} <i className="fas fa-times"></i></span>}
                                     </div>
