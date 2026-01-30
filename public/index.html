@@ -3,83 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Competitive Intelligence - War Room</title>
+    <title>CI War Room - Veille Concurrentielle Gaming</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3b82f6',
-                        secondary: '#0f172a',
-                        accent: '#10b981',
-                        danger: '#ef4444',
-                        warning: '#f59e0b'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif']
+                        dark: { 900: '#0f0f1a', 800: '#1a1a2e', 700: '#252540', 600: '#2d2d4a' },
+                        accent: { blue: '#3b82f6', green: '#10b981', red: '#ef4444', yellow: '#f59e0b', purple: '#8b5cf6' }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-dark { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
-        .card-glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .pulse-dot { animation: pulse 2s infinite; }
+        body { font-family: 'Inter', sans-serif; background: #0f0f1a; }
+        .glass { background: rgba(26, 26, 46, 0.8); backdrop-filter: blur(10px); }
+        .status-dot { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .stat-card:hover { transform: translateY(-2px); transition: all 0.2s ease; }
     </style>
 </head>
-<body class="gradient-dark text-gray-100 min-h-screen">
+<body class="text-white min-h-screen">
     <div id="root"></div>
     <script type="text/babel">
 const { useState, useEffect } = React;
 
-// ===== DONNÉES DEMO =====
-const competitors = [
-    { id: 1, name: 'Acme Corp', domain: 'acme.com', status: 'active', lastChange: '2h ago', alerts: 3, threat: 'high', logo: '🏢' },
-    { id: 2, name: 'TechStart', domain: 'techstart.io', status: 'active', lastChange: '5h ago', alerts: 1, threat: 'medium', logo: '🚀' },
-    { id: 3, name: 'GlobalTech', domain: 'globaltech.com', status: 'watching', lastChange: '1d ago', alerts: 0, threat: 'low', logo: '🌐' },
-    { id: 4, name: 'InnovateCo', domain: 'innovate.co', status: 'active', lastChange: '3h ago', alerts: 2, threat: 'medium', logo: '💡' },
-    { id: 5, name: 'MarketLeader', domain: 'marketleader.com', status: 'watching', lastChange: '12h ago', alerts: 1, threat: 'high', logo: '📊' },
+// ===== VRAIS CONCURRENTS =====
+const comparators = [
+    {
+        id: 1,
+        name: 'AllKeyShop',
+        domain: 'allkeyshop.com',
+        logo: '🔵',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.allkeyshop.com/blog/sitemap_index.xml',
+        lastCheck: '30 Jan 2026, 16:45',
+        pagesIndexed: 847523,
+        newPages24h: 234,
+        avgPrice: 32.50,
+        marketShare: '35%',
+        threat: 'high',
+        notes: 'Leader historique, très agressif sur le SEO, cashback system'
+    },
+    {
+        id: 2,
+        name: 'GG.deals',
+        domain: 'gg.deals',
+        logo: '🟢',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://gg.deals/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:42',
+        pagesIndexed: 623847,
+        newPages24h: 412,
+        avgPrice: 31.20,
+        marketShare: '28%',
+        threat: 'high',
+        notes: 'Croissance rapide, UI moderne, système alertes prix, API'
+    },
+    {
+        id: 3,
+        name: 'IsThereAnyDeal',
+        domain: 'isthereanydeal.com',
+        logo: '🟡',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://isthereanydeal.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:40',
+        pagesIndexed: 234156,
+        newPages24h: 89,
+        avgPrice: 28.90,
+        marketShare: '15%',
+        threat: 'medium',
+        notes: 'Focus stores officiels, intégration Steam, wishlist sync'
+    },
+    {
+        id: 4,
+        name: 'CheapShark',
+        domain: 'cheapshark.com',
+        logo: '🦈',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.cheapshark.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:38',
+        pagesIndexed: 156234,
+        newPages24h: 45,
+        avgPrice: 24.50,
+        marketShare: '8%',
+        threat: 'low',
+        notes: 'API publique très utilisée, communauté dev, US-focused'
+    },
+    {
+        id: 5,
+        name: 'DLCompare',
+        domain: 'dlcompare.com',
+        logo: '🔴',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.dlcompare.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:35',
+        pagesIndexed: 312456,
+        newPages24h: 67,
+        avgPrice: 33.10,
+        marketShare: '10%',
+        threat: 'medium',
+        notes: 'Fort en France/Europe, multilingue, bon SEO local'
+    },
 ];
 
+const merchants = [
+    { id: 1, name: 'CDKeys', domain: 'cdkeys.com', logo: '🔑', status: 'active', avgPrice: 34.20, reliability: 94, lastPromo: 'WINTER25 -25%', threat: 'medium', inventory: 12453 },
+    { id: 2, name: 'Instant Gaming', domain: 'instant-gaming.com', logo: '⚡', status: 'active', avgPrice: 32.80, reliability: 87, lastPromo: '10% cashback new users', threat: 'high', inventory: 18234 },
+    { id: 3, name: 'G2A', domain: 'g2a.com', logo: '🏪', status: 'active', avgPrice: 29.50, reliability: 58, lastPromo: 'G2A Plus -10%', threat: 'high', inventory: 45678 },
+    { id: 4, name: 'Kinguin', domain: 'kinguin.net', logo: '👑', status: 'active', avgPrice: 31.20, reliability: 42, lastPromo: 'Flash Sale -40%', threat: 'medium', inventory: 23456 },
+    { id: 5, name: 'Eneba', domain: 'eneba.com', logo: '🛒', status: 'active', avgPrice: 30.10, reliability: 71, lastPromo: 'ENEBA5 -5%', threat: 'high', inventory: 34567 },
+    { id: 6, name: 'Fanatical', domain: 'fanatical.com', logo: '🎯', status: 'active', avgPrice: 35.90, reliability: 89, lastPromo: 'Build your bundle', threat: 'low', inventory: 8765 },
+    { id: 7, name: 'Gamesplanet', domain: 'gamesplanet.com', logo: '🌍', status: 'active', avgPrice: 36.50, reliability: 91, lastPromo: 'Weekend deals', threat: 'low', inventory: 6543 },
+    { id: 8, name: 'HRK Game', domain: 'hrkgame.com', logo: '🎮', status: 'active', avgPrice: 28.90, reliability: 65, lastPromo: 'New user -15%', threat: 'low', inventory: 9876 },
+    { id: 9, name: 'Gamivo', domain: 'gamivo.com', logo: '🎪', status: 'active', avgPrice: 27.80, reliability: 68, lastPromo: 'Smart price', threat: 'medium', inventory: 19876 },
+    { id: 10, name: 'Green Man Gaming', domain: 'greenmangaming.com', logo: '🟩', status: 'active', avgPrice: 38.50, reliability: 95, lastPromo: 'VIP -22%', threat: 'low', inventory: 4567 },
+];
+
+// Alertes récentes réalistes
 const recentAlerts = [
-    { id: 1, type: 'price', competitor: 'Acme Corp', message: 'Prix réduit de 15% sur le produit phare', time: '2h ago', severity: 'high' },
-    { id: 2, type: 'content', competitor: 'TechStart', message: 'Nouvelle landing page détectée', time: '5h ago', severity: 'medium' },
-    { id: 3, type: 'social', competitor: 'Acme Corp', message: 'Campagne pub lancée sur LinkedIn', time: '8h ago', severity: 'high' },
-    { id: 4, type: 'product', competitor: 'InnovateCo', message: 'Nouvelle feature annoncée', time: '12h ago', severity: 'medium' },
-    { id: 5, type: 'seo', competitor: 'MarketLeader', message: 'Nouveau blog post SEO', time: '1d ago', severity: 'low' },
+    { id: 1, type: 'price_drop', competitor: 'GG.deals', message: 'GTA VI Pre-order listé à 54.99€ chez Instant Gaming (vs 59.99€ Steam)', severity: 'high', time: '12 min', game: 'GTA VI', url: 'https://gg.deals/game/gta-vi/' },
+    { id: 2, type: 'new_feature', competitor: 'AllKeyShop', message: 'Nouvelle section "Verified Sellers" avec badge de confiance', severity: 'high', time: '1h', game: null },
+    { id: 3, type: 'sitemap', competitor: 'Instant Gaming', message: '+1,247 nouvelles URLs détectées (probablement winter sale)', severity: 'medium', time: '2h', game: null },
+    { id: 4, type: 'promo', competitor: 'CDKeys', message: 'Code WINTER25 actif: -25% sur toute la sélection', severity: 'medium', time: '3h', game: null },
+    { id: 5, type: 'price_drop', competitor: 'Eneba', message: 'EA FC 25 à 41.99€ - meilleur prix actuel du marché', severity: 'high', time: '4h', game: 'EA FC 25', url: 'https://eneba.com/ea-fc-25' },
+    { id: 6, type: 'seo', competitor: 'IsThereAnyDeal', message: 'Passé en position 3 sur "cheap steam keys" (Google FR)', severity: 'medium', time: '6h', game: null },
+    { id: 7, type: 'new_page', competitor: 'DLCompare', message: 'Page "Monster Hunter Wilds" créée 2 mois avant sortie', severity: 'low', time: '8h', game: 'Monster Hunter Wilds' },
+    { id: 8, type: 'api_change', competitor: 'CheapShark', message: 'Nouvelle endpoint API v2 détectée /api/2.0/deals', severity: 'low', time: '1d', game: null },
 ];
 
-const stats = {
-    competitorsTracked: 5,
-    activeAlerts: 7,
-    changesThisWeek: 23,
-    avgResponseTime: '2.4h',
-    lastScan: '30 Jan 2026, 16:45',
-    uptime: '99.8%'
+// Données price checker
+const gamePrices = {
+    'GTA VI': [
+        { merchant: 'CDKeys', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 54.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 52.50, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Kinguin', price: 55.99, currency: 'EUR', inStock: false, region: 'EU' },
+        { merchant: 'Eneba', price: 53.20, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Fanatical', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Green Man Gaming', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'EA FC 25': [
+        { merchant: 'CDKeys', price: 45.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 44.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 42.30, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Eneba', price: 41.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Gamivo', price: 43.50, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Elden Ring': [
+        { merchant: 'CDKeys', price: 35.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 34.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 32.80, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Fanatical', price: 37.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Green Man Gaming', price: 39.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Cyberpunk 2077': [
+        { merchant: 'CDKeys', price: 24.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 22.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 21.50, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Eneba', price: 23.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Kinguin', price: 25.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Hogwarts Legacy': [
+        { merchant: 'CDKeys', price: 32.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 31.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Fanatical', price: 34.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Gamesplanet', price: 35.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+};
+
+const sitemapHistory = [
+    { date: '30 Jan', allkeyshop: 847523, ggdeals: 623847, itad: 234156, dlcompare: 312456 },
+    { date: '29 Jan', allkeyshop: 847289, ggdeals: 623435, itad: 234067, dlcompare: 312389 },
+    { date: '28 Jan', allkeyshop: 846892, ggdeals: 622980, itad: 233945, dlcompare: 312234 },
+    { date: '27 Jan', allkeyshop: 846234, ggdeals: 622456, itad: 233812, dlcompare: 312156 },
+    { date: '26 Jan', allkeyshop: 845678, ggdeals: 621890, itad: 233698, dlcompare: 312078 },
+    { date: '25 Jan', allkeyshop: 845123, ggdeals: 621234, itad: 233589, dlcompare: 311967 },
+    { date: '24 Jan', allkeyshop: 844567, ggdeals: 620678, itad: 233478, dlcompare: 311856 },
+];
+
+// ===== STATUS CHECKER DATA =====
+const serviceStatus = {
+    'AllKeyShop': {
+        logo: '🔵',
+        domain: 'allkeyshop.com',
+        services: [
+            {
+                name: 'Main Website',
+                url: 'https://www.allkeyshop.com/blog/',
+                status: 'online',
+                lastCheck: '30 Jan 2026, 16:55',
+                responseTime: 234
+            },
+            {
+                name: 'Reward Program',
+                url: 'https://www.allkeyshop.com/blog/reward-program/',
+                status: 'online',
+                lastCheck: '30 Jan 2026, 16:55',
+                responseTime: 312
+            },
+            {
+                name: 'Vouchers Page',
+                url: 'https://www.allkeyshop.com/blog/vouchers/',
+                status: 'online',
+                lastCheck: '30 Jan 2026, 16:55',
+                responseTime: 287
+            },
+            {
+                name: 'Coupons - All',
+                url: 'https://www.allkeyshop.com/blog/promo-codes/',
+                status: 'online',
+                lastCheck: '30 Jan 2026, 16:55',
+                responseTime: 345
+            },
+        ],
+        merchantVouchers: [
+            { merchant: 'CDKeys', url: 'https://www.allkeyshop.com/blog/cdkeys-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Instant Gaming', url: 'https://www.allkeyshop.com/blog/instant-gaming-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'G2A', url: 'https://www.allkeyshop.com/blog/g2a-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Kinguin', url: 'https://www.allkeyshop.com/blog/kinguin-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Eneba', url: 'https://www.allkeyshop.com/blog/eneba-voucher-codes/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404 Not Found' },
+            { merchant: 'Fanatical', url: 'https://www.allkeyshop.com/blog/fanatical-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Gamesplanet', url: 'https://www.allkeyshop.com/blog/gamesplanet-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'HRK Game', url: 'https://www.allkeyshop.com/blog/hrk-game-voucher-codes/', status: 'warning', lastCheck: '30 Jan 2026, 16:54', error: 'WordPress: No content found' },
+            { merchant: 'Gamivo', url: 'https://www.allkeyshop.com/blog/gamivo-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Green Man Gaming', url: 'https://www.allkeyshop.com/blog/green-man-gaming-voucher-codes/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+        ]
+    },
+    'GG.deals': {
+        logo: '🟢',
+        domain: 'gg.deals',
+        services: [
+            { name: 'Main Website', url: 'https://gg.deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 189 },
+            { name: 'Deals Page', url: 'https://gg.deals/deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 234 },
+            { name: 'Price History', url: 'https://gg.deals/price-history/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 312 },
+            { name: 'Vouchers', url: 'https://gg.deals/vouchers/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 278 },
+        ],
+        merchantVouchers: [
+            { merchant: 'CDKeys', url: 'https://gg.deals/vouchers/cdkeys/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Instant Gaming', url: 'https://gg.deals/vouchers/instant-gaming/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'G2A', url: 'https://gg.deals/vouchers/g2a/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Kinguin', url: 'https://gg.deals/vouchers/kinguin/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Eneba', url: 'https://gg.deals/vouchers/eneba/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+            { merchant: 'Fanatical', url: 'https://gg.deals/vouchers/fanatical/', status: 'online', lastCheck: '30 Jan 2026, 16:54' },
+        ]
+    },
+    'IsThereAnyDeal': {
+        logo: '🟡',
+        domain: 'isthereanydeal.com',
+        services: [
+            { name: 'Main Website', url: 'https://isthereanydeal.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 267 },
+            { name: 'Deals', url: 'https://isthereanydeal.com/deals/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 345 },
+            { name: 'Waitlist', url: 'https://isthereanydeal.com/waitlist/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 289 },
+            { name: 'API', url: 'https://api.isthereanydeal.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 156 },
+        ],
+        merchantVouchers: []
+    },
+    'CheapShark': {
+        logo: '🦈',
+        domain: 'cheapshark.com',
+        services: [
+            { name: 'Main Website', url: 'https://www.cheapshark.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 345 },
+            { name: 'Deals API', url: 'https://www.cheapshark.com/api/1.0/deals', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 189 },
+            { name: 'Stores API', url: 'https://www.cheapshark.com/api/1.0/stores', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 145 },
+            { name: 'Games API', url: 'https://www.cheapshark.com/api/1.0/games', status: 'warning', lastCheck: '30 Jan 2026, 16:55', responseTime: 2345, error: 'Slow response (>2s)' },
+        ],
+        merchantVouchers: []
+    },
+    'DLCompare': {
+        logo: '🔴',
+        domain: 'dlcompare.com',
+        services: [
+            { name: 'Main Website', url: 'https://www.dlcompare.com/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 423 },
+            { name: 'Blog', url: 'https://www.dlcompare.com/blog/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 567 },
+            { name: 'Bons Plans', url: 'https://www.dlcompare.com/bons-plans/', status: 'online', lastCheck: '30 Jan 2026, 16:55', responseTime: 489 },
+            { name: 'Codes Promo', url: 'https://www.dlcompare.com/codes-promo/', status: 'offline', lastCheck: '30 Jan 2026, 16:55', error: '404 Not Found' },
+        ],
+        merchantVouchers: [
+            { merchant: 'CDKeys', url: 'https://www.dlcompare.com/codes-promo/cdkeys/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
+            { merchant: 'Instant Gaming', url: 'https://www.dlcompare.com/codes-promo/instant-gaming/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
+            { merchant: 'Eneba', url: 'https://www.dlcompare.com/codes-promo/eneba/', status: 'offline', lastCheck: '30 Jan 2026, 16:54', error: '404' },
+        ]
+    }
+};
+
+// Discord webhook configuration
+const discordConfig = {
+    enabled: true,
+    webhookUrl: '',
+    channels: {
+        alerts: true,
+        priceDrops: true,
+        statusChanges: true,
+        dailyReport: false
+    }
 };
 
 // ===== COMPOSANTS =====
 function App() {
     const [currentPage, setCurrentPage] = useState('dashboard');
+    const [selectedGame, setSelectedGame] = useState('GTA VI');
 
     return (
-        <div className="min-h-screen">
+        <div className="flex min-h-screen">
             <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
-            <main className="ml-64 p-8">
-                {currentPage === 'dashboard' && <Dashboard />}
-                {currentPage === 'competitors' && <CompetitorsPage />}
+            <main className="flex-1 p-6 overflow-auto">
+                {currentPage === 'dashboard' && <Dashboard setCurrentPage={setCurrentPage} />}
+                {currentPage === 'comparators' && <ComparatorsPage />}
+                {currentPage === 'merchants' && <MerchantsPage />}
+                {currentPage === 'sitemap' && <SitemapChecker />}
+                {currentPage === 'prices' && <PriceChecker selectedGame={selectedGame} setSelectedGame={setSelectedGame} />}
+                {currentPage === 'status' && <StatusChecker />}
                 {currentPage === 'alerts' && <AlertsPage />}
-                {currentPage === 'reports' && <ReportsPage />}
                 {currentPage === 'settings' && <SettingsPage />}
             </main>
         </div>
@@ -87,227 +333,313 @@ function App() {
 }
 
 function Sidebar({ currentPage, setCurrentPage }) {
+    const offlineCount = Object.values(serviceStatus).reduce((acc, site) => {
+        const mainOffline = site.services.filter(s => s.status === 'offline' || s.status === 'warning').length;
+        const merchantOffline = site.merchantVouchers.filter(m => m.status === 'offline' || m.status === 'warning').length;
+        return acc + mainOffline + merchantOffline;
+    }, 0);
+
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
-        { id: 'competitors', label: 'Concurrents', icon: 'fa-users' },
-        { id: 'alerts', label: 'Alertes', icon: 'fa-bell' },
-        { id: 'reports', label: 'Rapports', icon: 'fa-chart-line' },
+        { id: 'dashboard', label: 'Dashboard', icon: 'fa-th-large' },
+        { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
+        { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
+        { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
+        { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
+        { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: offlineCount > 0 ? offlineCount : null },
+        { id: 'alerts', label: 'Alertes', icon: 'fa-bell', badge: recentAlerts.filter(a => a.severity === 'high').length },
         { id: 'settings', label: 'Paramètres', icon: 'fa-cog' },
     ];
 
     return (
-        <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-700 p-6">
-            <div className="flex items-center space-x-3 mb-10">
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <i className="fas fa-radar text-white"></i>
+        <aside className="w-64 bg-dark-800 border-r border-dark-600 p-4 flex flex-col">
+            <div className="flex items-center space-x-3 mb-8 px-2">
+                <div className="w-10 h-10 bg-accent-blue rounded-lg flex items-center justify-center">
+                    <i className="fas fa-crosshairs text-white"></i>
                 </div>
                 <div>
-                    <h1 className="font-bold text-lg">CI War Room</h1>
-                    <span className="text-xs text-slate-400">Intelligence Hub</span>
+                    <div className="font-bold text-white">CI War Room</div>
+                    <div className="text-xs text-gray-500">Gaming Keys Intel</div>
                 </div>
             </div>
 
-            <nav className="space-y-2">
+            <nav className="flex-1 space-y-1">
                 {menuItems.map(item => (
                     <button
                         key={item.id}
                         onClick={() => setCurrentPage(item.id)}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition ${
                             currentPage === item.id
-                                ? 'bg-primary text-white'
-                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                ? 'bg-accent-blue text-white'
+                                : 'text-gray-400 hover:bg-dark-700 hover:text-white'
                         }`}
                     >
-                        <i className={`fas ${item.icon} w-5`}></i>
-                        <span className="font-medium">{item.label}</span>
-                        {item.id === 'alerts' && (
-                            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.activeAlerts}</span>
+                        <div className="flex items-center space-x-3">
+                            <i className={`fas ${item.icon} w-5`}></i>
+                            <span className="font-medium text-sm">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                            <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{item.badge}</span>
+                        )}
+                        {item.count && (
+                            <span className="text-xs text-gray-500">{item.count}</span>
                         )}
                     </button>
                 ))}
             </nav>
 
-            <div className="absolute bottom-6 left-6 right-6">
-                <div className="card-glass rounded-lg p-4">
-                    <div className="flex items-center space-x-2 text-xs text-slate-400 mb-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full pulse-dot"></span>
-                        <span>Système actif</span>
-                    </div>
-                    <p className="text-xs text-slate-500">Dernier scan: {stats.lastScan}</p>
+            <div className="mt-auto pt-4 border-t border-dark-600">
+                <div className="flex items-center space-x-2 px-4 py-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full status-dot"></div>
+                    <span className="text-xs text-gray-500">Monitoring actif</span>
+                </div>
+                <div className="text-xs text-gray-600 px-4">
+                    Scan: {new Date().toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
             </div>
         </aside>
     );
 }
 
-function Dashboard() {
+function Dashboard({ setCurrentPage }) {
+    const totalPages = comparators.reduce((sum, c) => sum + c.pagesIndexed, 0);
+    const totalNew24h = comparators.reduce((sum, c) => sum + c.newPages24h, 0);
+    const highAlerts = recentAlerts.filter(a => a.severity === 'high').length;
+
     return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
+        <div>
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold">Dashboard</h1>
-                    <p className="text-slate-400 mt-1">Vue d'ensemble de votre veille concurrentielle</p>
+                    <h1 className="text-2xl font-bold">Dashboard</h1>
+                    <p className="text-gray-500">Veille concurrentielle - Comparateurs & Marchands de clés</p>
                 </div>
-                <button className="bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2">
+                <button className="px-4 py-2 bg-accent-blue rounded-lg font-medium hover:bg-blue-600 transition flex items-center space-x-2">
                     <i className="fas fa-sync-alt"></i>
-                    <span>Scanner maintenant</span>
+                    <span>Actualiser</span>
                 </button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-4 gap-6">
-                <StatCard title="Concurrents suivis" value={stats.competitorsTracked} icon="fa-users" color="blue" />
-                <StatCard title="Alertes actives" value={stats.activeAlerts} icon="fa-bell" color="red" />
-                <StatCard title="Changements (7j)" value={stats.changesThisWeek} icon="fa-exchange-alt" color="green" />
-                <StatCard title="Temps de réponse" value={stats.avgResponseTime} icon="fa-clock" color="yellow" />
+            {/* Stats */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+                {[
+                    { label: 'Comparateurs', value: comparators.length, icon: 'fa-balance-scale', color: 'blue' },
+                    { label: 'Marchands', value: merchants.length, icon: 'fa-store', color: 'green' },
+                    { label: 'Pages indexées', value: (totalPages/1000000).toFixed(1) + 'M', icon: 'fa-file', color: 'purple' },
+                    { label: 'Nouvelles 24h', value: '+' + totalNew24h, icon: 'fa-plus', color: 'yellow' },
+                    { label: 'Alertes critiques', value: highAlerts, icon: 'fa-exclamation', color: 'red' },
+                ].map((stat, i) => (
+                    <div key={i} className="glass rounded-xl p-4 border border-dark-600">
+                        <div className={`w-10 h-10 bg-accent-${stat.color}/20 rounded-lg flex items-center justify-center mb-3`}>
+                            <i className={`fas ${stat.icon} text-accent-${stat.color}`}></i>
+                        </div>
+                        <div className="text-2xl font-bold">{stat.value}</div>
+                        <div className="text-sm text-gray-500">{stat.label}</div>
+                    </div>
+                ))}
             </div>
 
-            {/* Main Content */}
             <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 card-glass rounded-xl p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                        <i className="fas fa-fire text-orange-500 mr-2"></i>
-                        Alertes récentes
-                    </h2>
-                    <div className="space-y-4">
-                        {recentAlerts.slice(0, 4).map(alert => (
-                            <AlertItem key={alert.id} alert={alert} />
+                {/* Alertes */}
+                <div className="col-span-2 glass rounded-xl border border-dark-600 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-semibold flex items-center">
+                            <i className="fas fa-bell text-accent-red mr-2"></i>
+                            Alertes récentes
+                        </h2>
+                        <button onClick={() => setCurrentPage('alerts')} className="text-sm text-accent-blue hover:underline">
+                            Tout voir →
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        {recentAlerts.slice(0, 6).map(alert => (
+                            <div key={alert.id} className={`p-3 rounded-lg border-l-4 ${
+                                alert.severity === 'high' ? 'bg-red-500/10 border-red-500' :
+                                alert.severity === 'medium' ? 'bg-yellow-500/10 border-yellow-500' :
+                                'bg-gray-500/10 border-gray-500'
+                            }`}>
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <span className="font-medium text-sm">{alert.competitor}</span>
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                                alert.type === 'price_drop' ? 'bg-green-500/20 text-green-400' :
+                                                alert.type === 'new_feature' ? 'bg-purple-500/20 text-purple-400' :
+                                                alert.type === 'sitemap' ? 'bg-blue-500/20 text-blue-400' :
+                                                alert.type === 'promo' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                alert.type === 'seo' ? 'bg-orange-500/20 text-orange-400' :
+                                                'bg-gray-500/20 text-gray-400'
+                                            }`}>{alert.type.replace('_', ' ')}</span>
+                                        </div>
+                                        <p className="text-sm text-gray-300">{alert.message}</p>
+                                    </div>
+                                    <span className="text-xs text-gray-500 ml-2">{alert.time}</span>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="card-glass rounded-xl p-6">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center">
-                        <i className="fas fa-crosshairs text-primary mr-2"></i>
-                        Top Menaces
+                {/* Top menaces */}
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4 flex items-center">
+                        <i className="fas fa-exclamation-triangle text-accent-yellow mr-2"></i>
+                        Menaces prioritaires
                     </h2>
-                    <div className="space-y-4">
-                        {competitors.filter(c => c.threat === 'high').map(comp => (
-                            <div key={comp.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <div className="space-y-3">
+                        {[...comparators, ...merchants].filter(c => c.threat === 'high').map(comp => (
+                            <div key={comp.id + comp.name} className="flex items-center justify-between p-2 rounded-lg bg-dark-700/50 hover:bg-dark-700">
                                 <div className="flex items-center space-x-3">
-                                    <span className="text-2xl">{comp.logo}</span>
+                                    <span className="text-xl">{comp.logo}</span>
                                     <div>
-                                        <p className="font-medium">{comp.name}</p>
-                                        <p className="text-xs text-slate-400">{comp.alerts} alertes</p>
+                                        <div className="font-medium text-sm">{comp.name}</div>
+                                        <div className="text-xs text-gray-500">{comp.domain}</div>
                                     </div>
                                 </div>
-                                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Haute</span>
+                                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">HAUTE</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
-        </div>
-    );
-}
 
-function StatCard({ title, value, icon, color }) {
-    const colorClasses = {
-        blue: 'bg-blue-500/20 text-blue-400',
-        red: 'bg-red-500/20 text-red-400',
-        green: 'bg-green-500/20 text-green-400',
-        yellow: 'bg-yellow-500/20 text-yellow-400'
-    };
-
-    return (
-        <div className="card-glass rounded-xl p-6 stat-card">
-            <div className="flex items-center justify-between mb-4">
-                <span className={`w-12 h-12 ${colorClasses[color]} rounded-lg flex items-center justify-center`}>
-                    <i className={`fas ${icon} text-xl`}></i>
-                </span>
-            </div>
-            <p className="text-3xl font-bold">{value}</p>
-            <p className="text-slate-400 text-sm mt-1">{title}</p>
-        </div>
-    );
-}
-
-function AlertItem({ alert }) {
-    const severityColors = {
-        high: 'border-red-500 bg-red-500/10',
-        medium: 'border-yellow-500 bg-yellow-500/10',
-        low: 'border-green-500 bg-green-500/10'
-    };
-
-    const typeIcons = {
-        price: 'fa-tag',
-        content: 'fa-file-alt',
-        social: 'fa-share-alt',
-        product: 'fa-box',
-        seo: 'fa-search'
-    };
-
-    return (
-        <div className={`flex items-start space-x-4 p-4 rounded-lg border-l-4 ${severityColors[alert.severity]}`}>
-            <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
-                <i className={`fas ${typeIcons[alert.type]} text-slate-300`}></i>
-            </div>
-            <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                    <span className="font-medium">{alert.competitor}</span>
-                    <span className="text-xs text-slate-400">{alert.time}</span>
+            {/* Sitemap evolution */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h2 className="font-semibold mb-4 flex items-center">
+                    <i className="fas fa-chart-line text-accent-blue mr-2"></i>
+                    Évolution pages indexées (7 jours)
+                </h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-gray-500 border-b border-dark-600">
+                                <th className="text-left py-2 font-medium">Date</th>
+                                <th className="text-right font-medium">🔵 AllKeyShop</th>
+                                <th className="text-right font-medium">🟢 GG.deals</th>
+                                <th className="text-right font-medium">🟡 ITAD</th>
+                                <th className="text-right font-medium">🔴 DLCompare</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sitemapHistory.map((row, i) => (
+                                <tr key={i} className="border-b border-dark-700/50">
+                                    <td className="py-2 text-gray-400">{row.date}</td>
+                                    <td className="text-right font-mono">{row.allkeyshop.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.ggdeals.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.itad.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.dlcompare.toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-                <p className="text-sm text-slate-300 mt-1">{alert.message}</p>
             </div>
         </div>
     );
 }
 
-function CompetitorsPage() {
+function ComparatorsPage() {
     return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Concurrents</h1>
-                    <p className="text-slate-400 mt-1">Gérez votre watchlist de concurrents</p>
-                </div>
-                <button className="bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium">
-                    <i className="fas fa-plus mr-2"></i>Ajouter un concurrent
-                </button>
+        <div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold">Comparateurs de prix</h1>
+                <p className="text-gray-500">{comparators.length} comparateurs surveillés</p>
             </div>
 
-            <div className="card-glass rounded-xl overflow-hidden">
+            <div className="grid grid-cols-2 gap-4">
+                {comparators.map(comp => (
+                    <div key={comp.id} className="glass rounded-xl border border-dark-600 p-5">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                                <span className="text-3xl">{comp.logo}</span>
+                                <div>
+                                    <div className="font-bold text-lg">{comp.name}</div>
+                                    <a href={`https://${comp.domain}`} target="_blank" className="text-sm text-accent-blue hover:underline">{comp.domain}</a>
+                                </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                comp.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                comp.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                            }`}>
+                                Menace {comp.threat === 'high' ? 'haute' : comp.threat === 'medium' ? 'moyenne' : 'faible'}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">Pages</div>
+                                <div className="font-bold text-lg">{(comp.pagesIndexed/1000).toFixed(0)}k</div>
+                            </div>
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">24h</div>
+                                <div className="font-bold text-lg text-green-400">+{comp.newPages24h}</div>
+                            </div>
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">Part marché</div>
+                                <div className="font-bold text-lg">{comp.marketShare}</div>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-gray-400 mb-3">{comp.notes}</p>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>Sitemap: <a href={comp.sitemapUrl} target="_blank" className="text-accent-blue hover:underline">Voir</a></span>
+                            <span>Check: {comp.lastCheck}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MerchantsPage() {
+    return (
+        <div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold">Marchands de clés</h1>
+                <p className="text-gray-500">{merchants.length} marchands surveillés</p>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
                 <table className="w-full">
-                    <thead className="bg-slate-800/50">
+                    <thead className="bg-dark-700">
                         <tr>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Concurrent</th>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Domaine</th>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Statut</th>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Menace</th>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Alertes</th>
-                            <th className="text-left py-4 px-6 font-medium text-slate-400">Dernier changement</th>
-                            <th className="text-right py-4 px-6 font-medium text-slate-400">Actions</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Marchand</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix moy.</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Fiabilité TPA</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Catalogue</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Dernière promo</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Menace</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {competitors.map(comp => (
-                            <tr key={comp.id} className="border-t border-slate-700/50 hover:bg-slate-800/30">
-                                <td className="py-4 px-6">
+                    <tbody className="divide-y divide-dark-600">
+                        {merchants.map(m => (
+                            <tr key={m.id} className="hover:bg-dark-700/50">
+                                <td className="px-4 py-3">
                                     <div className="flex items-center space-x-3">
-                                        <span className="text-2xl">{comp.logo}</span>
-                                        <span className="font-medium">{comp.name}</span>
+                                        <span className="text-xl">{m.logo}</span>
+                                        <div>
+                                            <div className="font-medium">{m.name}</div>
+                                            <div className="text-xs text-gray-500">{m.domain}</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td className="py-4 px-6 text-slate-400">{comp.domain}</td>
-                                <td className="py-4 px-6">
-                                    <span className={`px-2 py-1 rounded-full text-xs ${comp.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'}`}>
-                                        {comp.status === 'active' ? 'Actif' : 'Surveillance'}
+                                <td className="px-4 py-3 text-right font-mono">{m.avgPrice}€</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`font-bold ${m.reliability >= 80 ? 'text-green-400' : m.reliability >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {m.reliability}%
                                     </span>
                                 </td>
-                                <td className="py-4 px-6">
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        comp.threat === 'high' ? 'bg-red-500/20 text-red-400' :
-                                        comp.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                <td className="px-4 py-3 text-right text-gray-400">{m.inventory.toLocaleString()}</td>
+                                <td className="px-4 py-3">
+                                    <span className="text-sm text-yellow-400"><i className="fas fa-tag mr-1"></i>{m.lastPromo}</span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded text-xs ${
+                                        m.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                        m.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                                         'bg-green-500/20 text-green-400'
-                                    }`}>
-                                        {comp.threat === 'high' ? 'Haute' : comp.threat === 'medium' ? 'Moyenne' : 'Basse'}
-                                    </span>
-                                </td>
-                                <td className="py-4 px-6">{comp.alerts}</td>
-                                <td className="py-4 px-6 text-slate-400">{comp.lastChange}</td>
-                                <td className="py-4 px-6 text-right">
-                                    <button className="text-slate-400 hover:text-white p-2"><i className="fas fa-eye"></i></button>
-                                    <button className="text-slate-400 hover:text-white p-2"><i className="fas fa-edit"></i></button>
+                                    }`}>{m.threat}</span>
                                 </td>
                             </tr>
                         ))}
@@ -318,31 +650,407 @@ function CompetitorsPage() {
     );
 }
 
-function AlertsPage() {
+function SitemapChecker() {
+    const [scanning, setScanning] = useState(false);
+
     return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
+        <div>
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold">Alertes</h1>
-                    <p className="text-slate-400 mt-1">Toutes les alertes de votre veille</p>
+                    <h1 className="text-2xl font-bold">Sitemap Checker</h1>
+                    <p className="text-gray-500">Surveillance des sitemaps concurrents</p>
                 </div>
-                <div className="flex space-x-4">
-                    <select className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm">
-                        <option>Toutes les sévérités</option>
-                        <option>Haute</option>
-                        <option>Moyenne</option>
-                        <option>Basse</option>
-                    </select>
-                    <button className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg">
-                        <i className="fas fa-check-double mr-2"></i>Tout marquer lu
-                    </button>
+                <button
+                    onClick={() => { setScanning(true); setTimeout(() => setScanning(false), 3000); }}
+                    disabled={scanning}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {scanning ? <><i className="fas fa-spinner fa-spin"></i><span>Scan...</span></> : <><i className="fas fa-search"></i><span>Scanner</span></>}
+                </button>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden mb-6">
+                <table className="w-full">
+                    <thead className="bg-dark-700">
+                        <tr>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Site</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">URL Sitemap</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Pages</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">+24h</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Dernier check</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-600">
+                        {comparators.map(c => (
+                            <tr key={c.id} className="hover:bg-dark-700/50">
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xl">{c.logo}</span>
+                                        <span className="font-medium">{c.name}</span>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <a href={c.sitemapUrl} target="_blank" className="text-accent-blue hover:underline text-sm truncate block max-w-xs">{c.sitemapUrl}</a>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono">{c.pagesIndexed.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right">
+                                    <span className={`font-semibold ${c.newPages24h > 200 ? 'text-red-400' : c.newPages24h > 100 ? 'text-yellow-400' : 'text-green-400'}`}>+{c.newPages24h}</span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-400">{c.lastCheck}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 p-4">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>À quoi ça sert ?</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Détecter les nouvelles pages</strong> : Quand un concurrent ajoute des jeux avant vous</li>
+                    <li>• <strong>Surveiller le SEO</strong> : Une explosion de pages = campagne SEO agressive</li>
+                    <li>• <strong>Anticiper</strong> : Pages créées pour des jeux pas encore sortis</li>
+                    <li>• <strong>Benchmarker</strong> : Comparer la taille de votre catalogue vs concurrents</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+function PriceChecker({ selectedGame, setSelectedGame }) {
+    const games = Object.keys(gamePrices);
+    const prices = gamePrices[selectedGame] || [];
+    const sortedPrices = [...prices].sort((a, b) => a.price - b.price);
+    const minPrice = sortedPrices.length > 0 ? sortedPrices[0].price : 0;
+    const maxPrice = sortedPrices.length > 0 ? sortedPrices[sortedPrices.length - 1].price : 0;
+
+    return (
+        <div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold">Price Checker</h1>
+                <p className="text-gray-500">Comparaison des prix en temps réel sur tous les marchands</p>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 p-4 mb-6">
+                <label className="block text-sm text-gray-400 mb-3">Sélectionner un jeu</label>
+                <div className="flex flex-wrap gap-2">
+                    {games.map(game => (
+                        <button
+                            key={game}
+                            onClick={() => setSelectedGame(game)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                                selectedGame === game ? 'bg-accent-blue text-white' : 'bg-dark-700 hover:bg-dark-600 text-gray-300'
+                            }`}
+                        >
+                            {game}
+                        </button>
+                    ))}
                 </div>
             </div>
 
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                <div className="p-4 border-b border-dark-600 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-bold">{selectedGame}</h2>
+                        <p className="text-sm text-gray-500">{prices.length} offres trouvées</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm text-gray-500">Meilleur prix</div>
+                        <div className="text-2xl font-bold text-green-400">{minPrice.toFixed(2)}€</div>
+                    </div>
+                </div>
+                <table className="w-full">
+                    <thead className="bg-dark-700">
+                        <tr>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Marchand</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">vs meilleur</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Région</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-600">
+                        {sortedPrices.map((item, i) => (
+                            <tr key={i} className={`hover:bg-dark-700/50 ${i === 0 ? 'bg-green-500/10' : ''}`}>
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="font-medium">{item.merchant}</span>
+                                        {i === 0 && <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">BEST</span>}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                    <span className={`text-lg font-bold ${i === 0 ? 'text-green-400' : ''}`}>{item.price.toFixed(2)}€</span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    {i === 0 ? (
+                                        <span className="text-green-400">-</span>
+                                    ) : (
+                                        <span className="text-red-400">+{(item.price - minPrice).toFixed(2)}€</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3 text-center text-sm text-gray-400">{item.region}</td>
+                                <td className="px-4 py-3 text-center">
+                                    {item.inStock ? (
+                                        <span className="text-green-400"><i className="fas fa-check"></i></span>
+                                    ) : (
+                                        <span className="text-red-400"><i className="fas fa-times"></i></span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="mt-4 glass rounded-xl border border-dark-600 p-4">
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Écart min-max:</span>
+                    <span className="font-bold text-yellow-400">{(maxPrice - minPrice).toFixed(2)}€ ({((maxPrice - minPrice) / minPrice * 100).toFixed(1)}%)</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function StatusChecker() {
+    const [scanning, setScanning] = useState(false);
+    const [expandedSites, setExpandedSites] = useState(['AllKeyShop', 'GG.deals', 'DLCompare']);
+
+    const toggleSite = (site) => {
+        if (expandedSites.includes(site)) {
+            setExpandedSites(expandedSites.filter(s => s !== site));
+        } else {
+            setExpandedSites([...expandedSites, site]);
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch(status) {
+            case 'online': return <span className="text-green-400"><i className="fas fa-check-circle"></i></span>;
+            case 'offline': return <span className="text-red-400"><i className="fas fa-times-circle"></i></span>;
+            case 'warning': return <span className="text-yellow-400"><i className="fas fa-exclamation-triangle"></i></span>;
+            default: return <span className="text-gray-400"><i className="fas fa-question-circle"></i></span>;
+        }
+    };
+
+    const getStatusBg = (status) => {
+        switch(status) {
+            case 'online': return 'bg-green-500/10 border-green-500/30';
+            case 'offline': return 'bg-red-500/10 border-red-500/30';
+            case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
+            default: return 'bg-gray-500/10 border-gray-500/30';
+        }
+    };
+
+    const totalServices = Object.values(serviceStatus).reduce((acc, site) => acc + site.services.length + site.merchantVouchers.length, 0);
+    const onlineCount = Object.values(serviceStatus).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'online').length + site.merchantVouchers.filter(m => m.status === 'online').length;
+    }, 0);
+    const offlineCount = Object.values(serviceStatus).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'offline').length + site.merchantVouchers.filter(m => m.status === 'offline').length;
+    }, 0);
+    const warningCount = Object.values(serviceStatus).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'warning').length + site.merchantVouchers.filter(m => m.status === 'warning').length;
+    }, 0);
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Status Checker</h1>
+                    <p className="text-gray-500">Monitoring santé des services concurrents</p>
+                </div>
+                <button
+                    onClick={() => { setScanning(true); setTimeout(() => setScanning(false), 3000); }}
+                    disabled={scanning}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {scanning ? <><i className="fas fa-spinner fa-spin"></i><span>Scan...</span></> : <><i className="fas fa-satellite-dish"></i><span>Scanner tout</span></>}
+                </button>
+            </div>
+
+            {/* Stats globales */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Total services</div>
+                    <div className="text-2xl font-bold">{totalServices}</div>
+                </div>
+                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                    <div className="text-sm text-green-400 mb-1"><i className="fas fa-check-circle mr-1"></i>En ligne</div>
+                    <div className="text-2xl font-bold text-green-400">{onlineCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
+                    <div className="text-sm text-yellow-400 mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>Warnings</div>
+                    <div className="text-2xl font-bold text-yellow-400">{warningCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                    <div className="text-sm text-red-400 mb-1"><i className="fas fa-times-circle mr-1"></i>Hors ligne</div>
+                    <div className="text-2xl font-bold text-red-400">{offlineCount}</div>
+                </div>
+            </div>
+
+            {/* Tree structure par site */}
             <div className="space-y-4">
+                {Object.entries(serviceStatus).map(([siteName, siteData]) => {
+                    const isExpanded = expandedSites.includes(siteName);
+                    const siteOffline = siteData.services.filter(s => s.status === 'offline').length + siteData.merchantVouchers.filter(m => m.status === 'offline').length;
+                    const siteWarning = siteData.services.filter(s => s.status === 'warning').length + siteData.merchantVouchers.filter(m => m.status === 'warning').length;
+                    const siteOnline = siteData.services.filter(s => s.status === 'online').length + siteData.merchantVouchers.filter(m => m.status === 'online').length;
+                    const totalSiteServices = siteData.services.length + siteData.merchantVouchers.length;
+
+                    return (
+                        <div key={siteName} className="glass rounded-xl border border-dark-600 overflow-hidden">
+                            {/* Site header */}
+                            <div
+                                className="p-4 flex items-center justify-between cursor-pointer hover:bg-dark-700/50 transition"
+                                onClick={() => toggleSite(siteName)}
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-2xl">{siteData.logo}</span>
+                                    <div>
+                                        <div className="font-bold text-lg">{siteName}</div>
+                                        <div className="text-sm text-gray-500">{siteData.domain}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2 text-sm">
+                                        <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">{siteOnline} <i className="fas fa-check"></i></span>
+                                        {siteWarning > 0 && <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">{siteWarning} <i className="fas fa-exclamation"></i></span>}
+                                        {siteOffline > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteOffline} <i className="fas fa-times"></i></span>}
+                                    </div>
+                                    <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-500`}></i>
+                                </div>
+                            </div>
+
+                            {/* Expanded tree */}
+                            {isExpanded && (
+                                <div className="border-t border-dark-600 p-4 pl-6 space-y-2">
+                                    {/* Main services */}
+                                    <div className="mb-3">
+                                        <div className="text-xs text-gray-500 uppercase font-semibold mb-2 flex items-center">
+                                            <i className="fas fa-folder-open mr-2"></i>Services principaux
+                                        </div>
+                                        <div className="space-y-1 ml-4 border-l-2 border-dark-600 pl-4">
+                                            {siteData.services.map((service, idx) => (
+                                                <div key={idx} className={`p-2 rounded border ${getStatusBg(service.status)} flex items-center justify-between`}>
+                                                    <div className="flex items-center space-x-3">
+                                                        {getStatusIcon(service.status)}
+                                                        <div>
+                                                            <div className="font-medium text-sm">{service.name}</div>
+                                                            <a href={service.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-md">{service.url}</a>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {service.responseTime && <div className="text-xs text-gray-400">{service.responseTime}ms</div>}
+                                                        {service.error && <div className="text-xs text-red-400">{service.error}</div>}
+                                                        <div className="text-xs text-gray-500">{service.lastCheck}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Merchant vouchers */}
+                                    {siteData.merchantVouchers.length > 0 && (
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase font-semibold mb-2 flex items-center">
+                                                <i className="fas fa-ticket-alt mr-2"></i>Pages Vouchers par marchand
+                                            </div>
+                                            <div className="space-y-1 ml-4 border-l-2 border-dark-600 pl-4">
+                                                {siteData.merchantVouchers.map((voucher, idx) => (
+                                                    <div key={idx} className={`p-2 rounded border ${getStatusBg(voucher.status)} flex items-center justify-between`}>
+                                                        <div className="flex items-center space-x-3">
+                                                            {getStatusIcon(voucher.status)}
+                                                            <div>
+                                                                <div className="font-medium text-sm">{voucher.merchant}</div>
+                                                                <a href={voucher.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-md">{voucher.url}</a>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            {voucher.error && <div className="text-xs text-red-400">{voucher.error}</div>}
+                                                            <div className="text-xs text-gray-500">{voucher.lastCheck}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Info box */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Détection automatique</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong className="text-red-400">404 Not Found</strong> : La page n'existe pas ou plus</li>
+                    <li>• <strong className="text-yellow-400">WordPress: No content</strong> : Page vide, template WordPress sans contenu</li>
+                    <li>• <strong className="text-yellow-400">Slow response (>2s)</strong> : Temps de réponse anormal</li>
+                    <li>• <strong className="text-red-400">Connection refused</strong> : Service complètement down</li>
+                    <li>• <strong className="text-red-400">SSL Error</strong> : Problème de certificat HTTPS</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+function AlertsPage() {
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Toutes les alertes</h1>
+                    <p className="text-gray-500">{recentAlerts.length} alertes récentes</p>
+                </div>
+            </div>
+
+            <div className="space-y-3">
                 {recentAlerts.map(alert => (
-                    <div key={alert.id} className="card-glass rounded-xl p-6">
-                        <AlertItem alert={alert} />
+                    <div key={alert.id} className={`glass rounded-xl border p-4 ${
+                        alert.severity === 'high' ? 'border-red-500/50' :
+                        alert.severity === 'medium' ? 'border-yellow-500/50' :
+                        'border-dark-600'
+                    }`}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-4">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                    alert.type === 'price_drop' ? 'bg-green-500/20 text-green-400' :
+                                    alert.type === 'new_feature' ? 'bg-purple-500/20 text-purple-400' :
+                                    alert.type === 'sitemap' ? 'bg-blue-500/20 text-blue-400' :
+                                    alert.type === 'promo' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    alert.type === 'seo' ? 'bg-orange-500/20 text-orange-400' :
+                                    'bg-gray-500/20 text-gray-400'
+                                }`}>
+                                    <i className={`fas ${
+                                        alert.type === 'price_drop' ? 'fa-arrow-down' :
+                                        alert.type === 'new_feature' ? 'fa-star' :
+                                        alert.type === 'sitemap' ? 'fa-sitemap' :
+                                        alert.type === 'promo' ? 'fa-tag' :
+                                        alert.type === 'seo' ? 'fa-search' :
+                                        'fa-bell'
+                                    }`}></i>
+                                </div>
+                                <div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <span className="font-semibold">{alert.competitor}</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs ${
+                                            alert.severity === 'high' ? 'bg-red-500/20 text-red-400' :
+                                            alert.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            'bg-gray-500/20 text-gray-400'
+                                        }`}>{alert.severity}</span>
+                                    </div>
+                                    <p className="text-gray-300">{alert.message}</p>
+                                    {alert.game && <p className="text-sm text-accent-blue mt-1"><i className="fas fa-gamepad mr-1"></i>{alert.game}</p>}
+                                </div>
+                            </div>
+                            <span className="text-sm text-gray-500">{alert.time}</span>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -350,73 +1058,176 @@ function AlertsPage() {
     );
 }
 
-function ReportsPage() {
-    return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold">Rapports</h1>
-                <p className="text-slate-400 mt-1">Analyses et rapports de veille</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-                <div className="card-glass rounded-xl p-6">
-                    <h3 className="text-xl font-semibold mb-4">Rapport hebdomadaire</h3>
-                    <p className="text-slate-400 mb-4">Synthèse des changements détectés cette semaine</p>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Généré le 30 Jan 2026</span>
-                        <button className="text-primary hover:text-blue-400"><i className="fas fa-download mr-2"></i>Télécharger</button>
-                    </div>
-                </div>
-                <div className="card-glass rounded-xl p-6">
-                    <h3 className="text-xl font-semibold mb-4">Analyse concurrentielle</h3>
-                    <p className="text-slate-400 mb-4">Positionnement vs concurrents principaux</p>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Mis à jour il y a 2h</span>
-                        <button className="text-primary hover:text-blue-400"><i className="fas fa-eye mr-2"></i>Voir</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function SettingsPage() {
-    return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold">Paramètres</h1>
-                <p className="text-slate-400 mt-1">Configuration de votre veille</p>
-            </div>
+    const [webhookUrl, setWebhookUrl] = useState('');
+    const [discordEnabled, setDiscordEnabled] = useState(false);
+    const [testSent, setTestSent] = useState(false);
 
-            <div className="card-glass rounded-xl p-6 space-y-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-4">Notifications</h3>
-                    <div className="space-y-4">
-                        <label className="flex items-center justify-between">
-                            <span>Alertes par email</span>
-                            <input type="checkbox" className="w-5 h-5 rounded" defaultChecked />
-                        </label>
-                        <label className="flex items-center justify-between">
-                            <span>Alertes haute priorité uniquement</span>
-                            <input type="checkbox" className="w-5 h-5 rounded" />
+    const sendTestMessage = () => {
+        setTestSent(true);
+        setTimeout(() => setTestSent(false), 3000);
+    };
+
+    return (
+        <div>
+            <h1 className="text-2xl font-bold mb-6">Paramètres</h1>
+            <div className="space-y-6">
+                {/* Discord Integration */}
+                <div className="glass rounded-xl border border-purple-500/30 p-4 bg-purple-500/5">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-semibold flex items-center">
+                            <i className="fab fa-discord text-purple-400 mr-2 text-xl"></i>
+                            Intégration Discord
+                        </h2>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={discordEnabled} onChange={() => setDiscordEnabled(!discordEnabled)} className="sr-only peer" />
+                            <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                         </label>
                     </div>
+
+                    {discordEnabled && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Webhook URL</label>
+                                <input
+                                    type="text"
+                                    value={webhookUrl}
+                                    onChange={(e) => setWebhookUrl(e.target.value)}
+                                    placeholder="https://discord.com/api/webhooks/..."
+                                    className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Alertes critiques</div>
+                                        <div className="text-xs text-gray-500">Nouvelles menaces, prix cassés</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Status changes</div>
+                                        <div className="text-xs text-gray-500">Services down/up</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Price drops</div>
+                                        <div className="text-xs text-gray-500">Baisses de prix &gt;10%</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Daily report</div>
+                                        <div className="text-xs text-gray-500">Résumé quotidien 9h</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <button
+                                onClick={sendTestMessage}
+                                disabled={!webhookUrl}
+                                className={`w-full py-2 rounded-lg font-medium transition flex items-center justify-center space-x-2 ${
+                                    !webhookUrl ? 'bg-dark-600 text-gray-500 cursor-not-allowed' :
+                                    testSent ? 'bg-green-500 text-white' :
+                                    'bg-purple-500 hover:bg-purple-600 text-white'
+                                }`}
+                            >
+                                {testSent ? (
+                                    <><i className="fas fa-check"></i><span>Message envoyé!</span></>
+                                ) : (
+                                    <><i className="fab fa-discord"></i><span>Envoyer un message test</span></>
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    {!discordEnabled && (
+                        <p className="text-sm text-gray-500">Activez pour recevoir les alertes sur votre serveur Discord</p>
+                    )}
                 </div>
-                <div>
-                    <h3 className="text-lg font-semibold mb-4">Fréquence de scan</h3>
-                    <select className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 w-full">
-                        <option>Toutes les heures</option>
-                        <option>Toutes les 6 heures</option>
-                        <option>Quotidien</option>
-                    </select>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-bell mr-2"></i>Notifications</h2>
+                    <div className="space-y-3">
+                        {[
+                            { label: 'Alertes prix (baisse > 10%)', checked: true },
+                            { label: 'Nouvelles pages sitemap (> 100/jour)', checked: true },
+                            { label: 'Nouvelles promos concurrents', checked: true },
+                            { label: 'Changements SEO majeurs', checked: false },
+                            { label: 'Services offline/online', checked: true },
+                            { label: 'Pages 404 détectées', checked: true },
+                        ].map((item, i) => (
+                            <label key={i} className="flex items-center justify-between p-2 rounded hover:bg-dark-700 cursor-pointer">
+                                <span className="text-sm">{item.label}</span>
+                                <input type="checkbox" defaultChecked={item.checked} className="w-4 h-4 accent-accent-blue" />
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-clock mr-2"></i>Fréquence des scans</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Sitemap Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                                <option>Quotidien</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Status Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les 15 minutes</option>
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Price Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                                <option>Quotidien</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Discord Reports</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Temps réel</option>
+                                <option>Digest horaire</option>
+                                <option>Digest quotidien</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-server mr-2"></i>API & Webhooks</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">API Key (pour intégrations externes)</label>
+                            <div className="flex space-x-2">
+                                <input type="text" value="ci_live_************************" readOnly className="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm font-mono" />
+                                <button className="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg text-sm"><i className="fas fa-copy"></i></button>
+                                <button className="px-4 py-2 bg-accent-blue hover:bg-blue-600 rounded-lg text-sm">Régénérer</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-// Render
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
