@@ -1250,7 +1250,10 @@ function PriceTrackerPage() {
     const [supabaseConfig, setSupabaseConfig] = useState(() => {
         const saved = localStorage.getItem('ci_supabase_config');
         if (saved) try { return JSON.parse(saved); } catch(e) {}
-        return { url: '', key: '' };
+        return {
+            url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+        };
     });
     const [configOpen, setConfigOpen] = useState(false);
 
