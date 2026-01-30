@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Intelligence Concurrentielle - Dashboard</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+      <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+      <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+      <style>body{font-family:system-ui,-apple-system,sans-serif}.gradient-bg{background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%)}</style>
+  </head>
+<body class="bg-slate-900 text-white min-h-screen">
+<div id="root"></div>div>
+<script type="text/babel">
+const {useState,useEffect}=React;
+const API='/api';
+
+function Dashboard(){
+  const [data,setData]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [tab,setTab]=useState('overview');
+  useEffect(()=>{fetch(`${API}/dashboard/feed`).then(r=>r.json()).then(d=>setData(d)).catch(()=>setData(getDemoData())).finally(()=>setLoading(false));},[]);
+  if(loading)return<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"/></div>;
+  return(<div className="min-h-screen">
+  <header className="gradient-bg border-b border-slate-700"><div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+  <div><h1 className="text-2xl font-bold">🎯 Intelligence Concurrentielle</h1><p className="text-slate-400 text-sm">Surveillance du marché</p></div>
+  <div className="text-sm text-slate-400">MAJ: {new Date(data?.generated_at).toLocaleString('fr-FR')}</div>
+  </div></header>
+  <nav className="bg-slate-800 border-b border-slate-700"><div className="max-w-7xl mx-auto px-6 flex space-x-4">
+    {['overview','competitors','signals'].map(t=><button key={t} onClick={()=>setTab(t)} className={`px-4 py-3 text-sm font-medium ${tab===t?'text-blue-400 border-b-2 border-blue-400':'text-slate-400 hover:text-white'}`}>
+      {t==='overview'&&'📊 Vue d\'ensemble'}{t==='competitors'&&'🏢 Concurrents'}{t==='signals'&&'⚡ Signaux'}</button>)}
+  </div></nav>
+  <main className="max-w-7xl mx-auto px-6 py-8">
+    {tab==='overview'&&<OverviewTab data={data}/>}{tab==='competitors'&&<CompetitorsTab data={data}/>}{tab==='signals'&&<SignalsTab data={data}/>}
+  </main></div>);}
+
+function OverviewTab({data}){
+  const m=data?.metrics||{};
+  return(<div className="space-y-8">
+  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+  <MetricCard title="Concurrents" value={m.competitors_tracked} icon="🏢" color="blue"/>
+  <MetricCard title="Scans (7j)" value={m.scans_last_7_days} icon="📊" color="green"/>
+  <MetricCard title="Changements" value={m.total_changes} icon="🔄" color="yellow"/>
+  <MetricCard title="Nouvelles pages" value={m.new_pages_detected} icon="➕" color="emerald"/>
+  <MetricCard title="Pages retirées" value={m.pages_removed} icon="➖" color="red"/>
+  </div>
+    {data?.signals?.length>0&&<div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+    <h2 className="text-lg font-semibold mb-4">⚠️ Signaux Détectés</h2>
+    <div className="space-y-3">{data.signals.map((s,i)=><div key={i} className={`p-4 rounded-lg border ${s.severity==='high'?'bg-red-900/30 border-red-700':'bg-yellow-900/30 border-yellow-700'}`}>
+    <p className="font-medium">{s.message}</p><p className="text-sm text-slate-400 mt-1">💡 {s.action}</p></div>)}</div></div>}
+  <div className="bg-slate-800 rounded-xl p-6 border border-slate-700"><h2 className="text-lg font-semibold mb-4">📈 Activité par Concurrent</h2>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{Object.entries(data?.activity_by_competitor||{}).map(([n,a])=>
+    <div key={n} className="bg-slate-700/50 rounded-lg p-4"><h3 className="font-medium mb-2">{n}</h3>
+    <div className="flex space-x-4 text-sm"><span className="text-green-400">+{a.added}</span><span className="text-red-400">-{a.removed}</span></div></div>)}</div></div>
+  </div>);}
+
+function CompetitorsTab({data}){
+  return(<div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+  <table className="w-full"><thead className="bg-slate-700"><tr>
+  <th className="px-6 py-3 text-left text-sm font-medium">Concurrent</th>
+  <th className="px-6 py-3 text-left text-sm font-medium">Domaine</th>
+  <th className="px-6 py-3 text-left text-sm font-medium">Catégorie</th>
+  <th className="px-6 py-3 text-left text-sm font-medium">Statut</th>
+  </tr></thead><tbody className="divide-y divide-slate-700">
+    {(data?.competitors||[]).map(c=><tr key={c.id} className="hover:bg-slate-700/50">
+    <td className="px-6 py-4 font-medium">{c.name}</td>
+    <td className="px-6 py-4 text-slate-400">{c.domain}</td>
+    <td className="px-6 py-4"><span className="px-2 py-1 bg-slate-600 rounded text-xs">{c.category}</span></td>
+    <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-xs ${c.active?'bg-green-600':'bg-slate-600'}`}>{c.active?'Actif':'Inactif'}</span></td>
+    </tr>)}</tbody></table></div>);}
+
+function SignalsTab({data}){
+  return(<div className="space-y-4"><h2 className="text-lg font-semibold">🔔 Derniers Changements</h2>
+    {(data?.recent_changes||[]).map((c,i)=><div key={i} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+    <div className="flex items-start justify-between"><div className="flex-1 min-w-0">
+    <span className={`px-2 py-0.5 text-xs rounded ${c.change_type==='added'?'bg-green-600':'bg-red-600'}`}>{c.change_type==='added'?'+ Ajouté':'- Retiré'}</span>
+    <span className="text-slate-400 text-sm ml-2">{c.competitors?.name}</span>
+    <p className="text-sm text-slate-300 truncate mt-1">{c.url}</p>
+    <p className="text-xs text-slate-500 mt-1">{new Date(c.detected_at).toLocaleString('fr-FR')}</p>
+    </div><span className="px-2 py-1 bg-slate-700 rounded text-xs ml-4">{c.category}</span></div></div>)}</div>);}
+
+function MetricCard({title,value,icon,color}){
+  const c={blue:'from-blue-600 to-blue-800',green:'from-green-600 to-green-800',yellow:'from-yellow-600 to-yellow-800',emerald:'from-emerald-600 to-emerald-800',red:'from-red-600 to-red-800'};
+  return(<div className={`bg-gradient-to-br ${c[color]} rounded-xl p-4`}>
+  <div className="flex items-center justify-between"><span className="text-2xl">{icon}</span><span className="text-3xl font-bold">{value||0}</span></div>
+  <p className="text-sm text-white/80 mt-2">{title}</p></div>);}
+
+function getDemoData(){return{
+  generated_at:new Date().toISOString(),
+  metrics:{competitors_tracked:7,scans_last_7_days:42,total_changes:156,new_pages_detected:134,pages_removed:22},
+  signals:[{type:'alert',severity:'high',message:'23 nouvelles pages produits chez G2A',action:'Analyser les nouveaux produits'},
+           {type:'opportunity',severity:'medium',message:'Eneba lance promotion FIFA 26',action:'Lancer contre-campagne'}],
+  activity_by_competitor:{'Eneba':{added:45,removed:5},'G2A':{added:38,removed:8},'Kinguin':{added:22,removed:3},'CDKeys':{added:15,removed:2},'Instant Gaming':{added:14,removed:4}},
+  recent_changes:[{url:'https://eneba.com/game/gta-vi',change_type:'added',detected_at:new Date().toISOString(),category:'product',competitors:{name:'Eneba'}},
+                  {url:'https://g2a.com/promo/winter',change_type:'added',detected_at:new Date().toISOString(),category:'promotion',competitors:{name:'G2A'}}],
+  competitors:[{id:1,name:'Eneba',domain:'eneba.com',category:'marketplace',active:true},{id:2,name:'G2A',domain:'g2a.com',category:'marketplace',active:true},
+               {id:3,name:'Kinguin',domain:'kinguin.net',category:'marketplace',active:true},{id:4,name:'CDKeys',domain:'cdkeys.com',category:'retailer',active:true},
+               {id:5,name:'Instant Gaming',domain:'instant-gaming.com',category:'retailer',active:true},{id:6,name:'GG.deals',domain:'gg.deals',category:'comparator',active:true},
+               {id:7,name:'AllKeyShop',domain:'allkeyshop.com',category:'comparator',active:true}]};}
+
+ReactDOM.render(<Dashboard/>,document.getElementById('root'));
+</script>
+</body>body>
+</html>html></style></title>
+  </head>
