@@ -793,7 +793,9 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
 
 function StatusChecker() {
     const [scanning, setScanning] = useState(false);
+    const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
     const [expandedSites, setExpandedSites] = useState(['AllKeyShop', 'GG.deals', 'DLCompare']);
+    const [statusData, setStatusData] = useState(serviceStatus);
 
     const toggleSite = (site) => {
         if (expandedSites.includes(site)) {
@@ -803,12 +805,100 @@ function StatusChecker() {
         }
     };
 
+    // Vérifier une URL via proxy CORS
+    const checkUrl = async (url) => {
+        const startTime = Date.now();
+        try {
+            // Utiliser allorigins comme proxy CORS
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                signal: AbortSignal.timeout(10000) // 10s timeout
+            });
+            const responseTime = Date.now() - startTime;
+            const text = await response.text();
+
+            // Vérifier si c'est une page WordPress vide ou "no content"
+            const isEmptyWordPress = text.includes('No posts found') ||
+                                     text.includes('Nothing Found') ||
+                                     text.includes('no-results') ||
+                                     (text.length < 1000 && text.includes('WordPress'));
+
+            if (!response.ok || response.status === 404) {
+                return { status: 'offline', responseTime, error: `HTTP ${response.status}` };
+            } else if (isEmptyWordPress) {
+                return { status: 'warning', responseTime, error: 'Page vide/no content' };
+            } else if (responseTime > 2000) {
+                return { status: 'warning', responseTime, error: 'Réponse lente' };
+            }
+            return { status: 'online', responseTime, error: null };
+        } catch (error) {
+            const responseTime = Date.now() - startTime;
+            if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+                return { status: 'error', responseTime, error: 'Timeout (10s)' };
+            }
+            return { status: 'error', responseTime, error: error.message || 'Connection failed' };
+        }
+    };
+
+    // Scanner toutes les URLs
+    const runFullScan = async () => {
+        setScanning(true);
+        const newStatusData = JSON.parse(JSON.stringify(statusData));
+
+        // Compter le total d'URLs à scanner
+        let totalUrls = 0;
+        Object.values(newStatusData).forEach(site => {
+            totalUrls += site.services.length + site.merchantVouchers.length;
+        });
+        setScanProgress({ current: 0, total: totalUrls });
+
+        let currentCount = 0;
+        const now = new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+        // Scanner chaque site
+        for (const [siteName, siteData] of Object.entries(newStatusData)) {
+            // Scanner les services principaux
+            for (let i = 0; i < siteData.services.length; i++) {
+                const result = await checkUrl(siteData.services[i].url);
+                newStatusData[siteName].services[i] = {
+                    ...siteData.services[i],
+                    status: result.status,
+                    responseTime: result.responseTime,
+                    error: result.error,
+                    lastCheck: now
+                };
+                currentCount++;
+                setScanProgress({ current: currentCount, total: totalUrls });
+                setStatusData({...newStatusData});
+            }
+
+            // Scanner les pages vouchers marchands
+            for (let i = 0; i < siteData.merchantVouchers.length; i++) {
+                const result = await checkUrl(siteData.merchantVouchers[i].url);
+                newStatusData[siteName].merchantVouchers[i] = {
+                    ...siteData.merchantVouchers[i],
+                    status: result.status,
+                    responseTime: result.responseTime,
+                    error: result.error,
+                    lastCheck: now
+                };
+                currentCount++;
+                setScanProgress({ current: currentCount, total: totalUrls });
+                setStatusData({...newStatusData});
+            }
+        }
+
+        setScanning(false);
+    };
+
     const getStatusIcon = (status) => {
         switch(status) {
             case 'online': return <span className="text-green-400"><i className="fas fa-check-circle"></i></span>;
             case 'offline': return <span className="text-red-400"><i className="fas fa-times-circle"></i></span>;
             case 'warning': return <span className="text-yellow-400"><i className="fas fa-exclamation-triangle"></i></span>;
             case 'pending': return <span className="text-blue-400"><i className="fas fa-clock"></i></span>;
+            case 'error': return <span className="text-red-400"><i className="fas fa-exclamation-circle"></i></span>;
             default: return <span className="text-gray-400"><i className="fas fa-question-circle"></i></span>;
         }
     };
@@ -819,22 +909,26 @@ function StatusChecker() {
             case 'offline': return 'bg-red-500/10 border-red-500/30';
             case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
             case 'pending': return 'bg-blue-500/10 border-blue-500/30';
+            case 'error': return 'bg-red-500/10 border-red-500/30';
             default: return 'bg-gray-500/10 border-gray-500/30';
         }
     };
 
-    const totalServices = Object.values(serviceStatus).reduce((acc, site) => acc + site.services.length + site.merchantVouchers.length, 0);
-    const onlineCount = Object.values(serviceStatus).reduce((acc, site) => {
+    const totalServices = Object.values(statusData).reduce((acc, site) => acc + site.services.length + site.merchantVouchers.length, 0);
+    const onlineCount = Object.values(statusData).reduce((acc, site) => {
         return acc + site.services.filter(s => s.status === 'online').length + site.merchantVouchers.filter(m => m.status === 'online').length;
     }, 0);
-    const offlineCount = Object.values(serviceStatus).reduce((acc, site) => {
+    const offlineCount = Object.values(statusData).reduce((acc, site) => {
         return acc + site.services.filter(s => s.status === 'offline').length + site.merchantVouchers.filter(m => m.status === 'offline').length;
     }, 0);
-    const warningCount = Object.values(serviceStatus).reduce((acc, site) => {
+    const warningCount = Object.values(statusData).reduce((acc, site) => {
         return acc + site.services.filter(s => s.status === 'warning').length + site.merchantVouchers.filter(m => m.status === 'warning').length;
     }, 0);
-    const pendingCount = Object.values(serviceStatus).reduce((acc, site) => {
+    const pendingCount = Object.values(statusData).reduce((acc, site) => {
         return acc + site.services.filter(s => s.status === 'pending').length + site.merchantVouchers.filter(m => m.status === 'pending').length;
+    }, 0);
+    const errorCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'error').length + site.merchantVouchers.filter(m => m.status === 'error').length;
     }, 0);
 
     return (
@@ -845,18 +939,22 @@ function StatusChecker() {
                     <p className="text-gray-500">Monitoring santé des services concurrents</p>
                 </div>
                 <button
-                    onClick={() => { setScanning(true); setTimeout(() => setScanning(false), 3000); }}
+                    onClick={runFullScan}
                     disabled={scanning}
                     className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
                         scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
                     }`}
                 >
-                    {scanning ? <><i className="fas fa-spinner fa-spin"></i><span>Scan...</span></> : <><i className="fas fa-satellite-dish"></i><span>Scanner tout</span></>}
+                    {scanning ? (
+                        <><i className="fas fa-spinner fa-spin"></i><span>Scan {scanProgress.current}/{scanProgress.total}</span></>
+                    ) : (
+                        <><i className="fas fa-satellite-dish"></i><span>Scanner tout</span></>
+                    )}
                 </button>
             </div>
 
             {/* Stats globales */}
-            <div className="grid grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-6 gap-4 mb-6">
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Total services</div>
                     <div className="text-2xl font-bold">{totalServices}</div>
@@ -877,16 +975,21 @@ function StatusChecker() {
                     <div className="text-sm text-red-400 mb-1"><i className="fas fa-times-circle mr-1"></i>Hors ligne</div>
                     <div className="text-2xl font-bold text-red-400">{offlineCount}</div>
                 </div>
+                <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                    <div className="text-sm text-red-400 mb-1"><i className="fas fa-exclamation-circle mr-1"></i>Erreurs</div>
+                    <div className="text-2xl font-bold text-red-400">{errorCount}</div>
+                </div>
             </div>
 
             {/* Tree structure par site */}
             <div className="space-y-4">
-                {Object.entries(serviceStatus).map(([siteName, siteData]) => {
+                {Object.entries(statusData).map(([siteName, siteData]) => {
                     const isExpanded = expandedSites.includes(siteName);
                     const siteOffline = siteData.services.filter(s => s.status === 'offline').length + siteData.merchantVouchers.filter(m => m.status === 'offline').length;
                     const siteWarning = siteData.services.filter(s => s.status === 'warning').length + siteData.merchantVouchers.filter(m => m.status === 'warning').length;
                     const siteOnline = siteData.services.filter(s => s.status === 'online').length + siteData.merchantVouchers.filter(m => m.status === 'online').length;
                     const sitePending = siteData.services.filter(s => s.status === 'pending').length + siteData.merchantVouchers.filter(m => m.status === 'pending').length;
+                    const siteError = siteData.services.filter(s => s.status === 'error').length + siteData.merchantVouchers.filter(m => m.status === 'error').length;
                     const totalSiteServices = siteData.services.length + siteData.merchantVouchers.length;
 
                     return (
@@ -909,6 +1012,7 @@ function StatusChecker() {
                                         {sitePending > 0 && <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400">{sitePending} <i className="fas fa-clock"></i></span>}
                                         {siteWarning > 0 && <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">{siteWarning} <i className="fas fa-exclamation"></i></span>}
                                         {siteOffline > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteOffline} <i className="fas fa-times"></i></span>}
+                                        {siteError > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteError} <i className="fas fa-exclamation-circle"></i></span>}
                                     </div>
                                     <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-500`}></i>
                                 </div>
@@ -978,12 +1082,15 @@ function StatusChecker() {
             <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
                 <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Détection automatique</h3>
                 <ul className="text-sm text-gray-400 space-y-2">
-                    <li>• <strong className="text-red-400">404 Not Found</strong> : La page n'existe pas ou plus</li>
-                    <li>• <strong className="text-yellow-400">WordPress: No content</strong> : Page vide, template WordPress sans contenu</li>
-                    <li>• <strong className="text-yellow-400">Slow response (>2s)</strong> : Temps de réponse anormal</li>
-                    <li>• <strong className="text-red-400">Connection refused</strong> : Service complètement down</li>
-                    <li>• <strong className="text-red-400">SSL Error</strong> : Problème de certificat HTTPS</li>
+                    <li>• <strong className="text-green-400">Online</strong> : Page accessible et contenu valide</li>
+                    <li>• <strong className="text-blue-400">En attente</strong> : URL non encore vérifiée (cliquez sur Scanner)</li>
+                    <li>• <strong className="text-yellow-400">Warning</strong> : Page vide, réponse lente (&gt;2s), ou contenu suspect</li>
+                    <li>• <strong className="text-red-400">Offline (404)</strong> : La page n'existe pas ou plus</li>
+                    <li>• <strong className="text-red-400">Error</strong> : Timeout, connexion refusée, ou erreur réseau</li>
                 </ul>
+                <p className="text-xs text-gray-500 mt-3">
+                    <i className="fas fa-server mr-1"></i> Les requêtes passent par un proxy CORS (api.allorigins.win) pour contourner les restrictions navigateur.
+                </p>
             </div>
         </div>
     );
