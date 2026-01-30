@@ -301,6 +301,7 @@ function App() {
                 {currentPage === 'comparators' && <ComparatorsPage />}
                 {currentPage === 'merchants' && <MerchantsPage />}
                 {currentPage === 'sitemap' && <SitemapChecker />}
+                {currentPage === 'price-tracker' && <PriceTrackerPage />}
                 {currentPage === 'prices' && <PriceChecker selectedGame={selectedGame} setSelectedGame={setSelectedGame} />}
                 {currentPage === 'status' && <StatusChecker />}
                 {currentPage === 'alerts' && <AlertsPage />}
@@ -322,6 +323,7 @@ function Sidebar({ currentPage, setCurrentPage }) {
         { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
         { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
+        { id: 'price-tracker', label: 'Relevés Prix', icon: 'fa-clipboard-check', badge: null },
         { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
         { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: alertCount > 0 ? alertCount : null },
         { id: 'alerts', label: 'Alertes', icon: 'fa-bell', badge: recentAlerts.filter(a => a.severity === 'high').length },
@@ -630,22 +632,134 @@ function MerchantsPage() {
 
 function SitemapChecker() {
     const [scanning, setScanning] = useState(false);
+    const [scanProgress, setScanProgress] = useState({ current: 0, total: 0, site: '' });
+    const [sitemapData, setSitemapData] = useState(() => {
+        // Charger depuis localStorage si disponible
+        const saved = localStorage.getItem('ci_sitemap_data');
+        if (saved) {
+            try { return JSON.parse(saved); } catch(e) { return {}; }
+        }
+        return {};
+    });
+
+    // Fetch un sitemap via proxy CORS
+    const fetchSitemap = async (url) => {
+        try {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(30000) });
+            if (!response.ok) return { error: `HTTP ${response.status}`, urls: 0 };
+            const text = await response.text();
+            return { text, error: null };
+        } catch (error) {
+            return { error: error.message || 'Timeout', urls: 0 };
+        }
+    };
+
+    // Parser XML et compter URLs
+    const parseSitemapXml = (xmlText) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlText, 'text/xml');
+
+        // Vérifier si c'est un sitemap index
+        const sitemapTags = doc.querySelectorAll('sitemap loc');
+        if (sitemapTags.length > 0) {
+            // C'est un sitemap index - retourner les sous-sitemaps
+            return { type: 'index', sitemaps: Array.from(sitemapTags).map(tag => tag.textContent) };
+        }
+
+        // C'est un sitemap normal - compter les URLs
+        const urlTags = doc.querySelectorAll('url loc');
+        return { type: 'sitemap', count: urlTags.length };
+    };
+
+    // Scanner un site complet (récursif pour sitemap index)
+    const scanSite = async (sitemapUrl, maxSubsitemaps = 50) => {
+        const result = await fetchSitemap(sitemapUrl);
+        if (result.error) return { count: 0, error: result.error };
+
+        const parsed = parseSitemapXml(result.text);
+
+        if (parsed.type === 'sitemap') {
+            return { count: parsed.count, error: null };
+        }
+
+        // C'est un sitemap index - scanner les sous-sitemaps (limité)
+        let totalCount = 0;
+        const subsitemaps = parsed.sitemaps.slice(0, maxSubsitemaps);
+
+        for (const subUrl of subsitemaps) {
+            const subResult = await fetchSitemap(subUrl);
+            if (!subResult.error) {
+                const subParsed = parseSitemapXml(subResult.text);
+                if (subParsed.type === 'sitemap') {
+                    totalCount += subParsed.count;
+                }
+            }
+        }
+
+        // Si on a limité, extrapoler
+        if (parsed.sitemaps.length > maxSubsitemaps) {
+            const avgPerSitemap = totalCount / subsitemaps.length;
+            totalCount = Math.round(avgPerSitemap * parsed.sitemaps.length);
+        }
+
+        return { count: totalCount, subsitemaps: parsed.sitemaps.length, error: null };
+    };
+
+    // Scanner tous les comparateurs
+    const runFullScan = async () => {
+        setScanning(true);
+        setScanProgress({ current: 0, total: comparators.length, site: '' });
+
+        const now = new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const newData = { ...sitemapData };
+
+        for (let i = 0; i < comparators.length; i++) {
+            const comp = comparators[i];
+            setScanProgress({ current: i + 1, total: comparators.length, site: comp.name });
+
+            const result = await scanSite(comp.sitemapUrl);
+
+            // Calculer la différence avec le scan précédent
+            const previousCount = newData[comp.name]?.count || 0;
+            const diff = result.count - previousCount;
+
+            newData[comp.name] = {
+                count: result.count,
+                previousCount: previousCount,
+                diff: diff,
+                lastCheck: now,
+                error: result.error,
+                subsitemaps: result.subsitemaps || null
+            };
+
+            setSitemapData({...newData});
+        }
+
+        // Sauvegarder dans localStorage
+        localStorage.setItem('ci_sitemap_data', JSON.stringify(newData));
+        setScanning(false);
+    };
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">Sitemap Checker</h1>
-                    <p className="text-gray-500">Surveillance des sitemaps concurrents</p>
+                    <p className="text-gray-500">Surveillance des sitemaps concurrents (données réelles)</p>
                 </div>
                 <button
-                    onClick={() => { setScanning(true); setTimeout(() => setScanning(false), 3000); }}
+                    onClick={runFullScan}
                     disabled={scanning}
                     className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
                         scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
                     }`}
                 >
-                    {scanning ? <><i className="fas fa-spinner fa-spin"></i><span>Scan...</span></> : <><i className="fas fa-search"></i><span>Scanner</span></>}
+                    {scanning ? (
+                        <><i className="fas fa-spinner fa-spin"></i><span>Scan {scanProgress.current}/{scanProgress.total} ({scanProgress.site})</span></>
+                    ) : (
+                        <><i className="fas fa-satellite-dish"></i><span>Scanner les sitemaps</span></>
+                    )}
                 </button>
             </div>
 
@@ -656,40 +770,71 @@ function SitemapChecker() {
                             <th className="text-left px-4 py-3 text-sm font-semibold">Site</th>
                             <th className="text-left px-4 py-3 text-sm font-semibold">URL Sitemap</th>
                             <th className="text-right px-4 py-3 text-sm font-semibold">Pages</th>
-                            <th className="text-right px-4 py-3 text-sm font-semibold">+24h</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Diff</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Status</th>
                             <th className="text-right px-4 py-3 text-sm font-semibold">Dernier check</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-600">
-                        {comparators.map(c => (
-                            <tr key={c.id} className="hover:bg-dark-700/50">
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-xl">{c.logo}</span>
-                                        <span className="font-medium">{c.name}</span>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                    <a href={c.sitemapUrl} target="_blank" className="text-accent-blue hover:underline text-sm truncate block max-w-xs">{c.sitemapUrl}</a>
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono">{c.pagesIndexed.toLocaleString()}</td>
-                                <td className="px-4 py-3 text-right">
-                                    <span className={`font-semibold ${c.newPages24h > 200 ? 'text-red-400' : c.newPages24h > 100 ? 'text-yellow-400' : 'text-green-400'}`}>+{c.newPages24h}</span>
-                                </td>
-                                <td className="px-4 py-3 text-right text-sm text-gray-400">{c.lastCheck}</td>
-                            </tr>
-                        ))}
+                        {comparators.map(c => {
+                            const data = sitemapData[c.name];
+                            const hasData = data && data.count > 0;
+                            const hasError = data && data.error;
+
+                            return (
+                                <tr key={c.id} className="hover:bg-dark-700/50">
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-xl">{c.logo}</span>
+                                            <div>
+                                                <span className="font-medium">{c.name}</span>
+                                                {data?.subsitemaps && <span className="text-xs text-gray-500 ml-2">({data.subsitemaps} sous-sitemaps)</span>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <a href={c.sitemapUrl} target="_blank" className="text-accent-blue hover:underline text-sm truncate block max-w-xs">{c.sitemapUrl}</a>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono">
+                                        {hasData ? data.count.toLocaleString() : <span className="text-gray-500">-</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {hasData && data.diff !== 0 ? (
+                                            <span className={`font-semibold ${data.diff > 0 ? (data.diff > 1000 ? 'text-red-400' : data.diff > 100 ? 'text-yellow-400' : 'text-green-400') : 'text-blue-400'}`}>
+                                                {data.diff > 0 ? '+' : ''}{data.diff.toLocaleString()}
+                                            </span>
+                                        ) : hasData ? (
+                                            <span className="text-gray-500">0</span>
+                                        ) : (
+                                            <span className="text-gray-500">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        {hasError ? (
+                                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded" title={data.error}>Erreur</span>
+                                        ) : hasData ? (
+                                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">OK</span>
+                                        ) : (
+                                            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded">En attente</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-sm text-gray-400">
+                                        {data?.lastCheck || '-'}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
 
             <div className="glass rounded-xl border border-dark-600 p-4">
-                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>À quoi ça sert ?</h3>
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
                 <ul className="text-sm text-gray-400 space-y-2">
-                    <li>• <strong>Détecter les nouvelles pages</strong> : Quand un concurrent ajoute des jeux avant vous</li>
-                    <li>• <strong>Surveiller le SEO</strong> : Une explosion de pages = campagne SEO agressive</li>
-                    <li>• <strong>Anticiper</strong> : Pages créées pour des jeux pas encore sortis</li>
-                    <li>• <strong>Benchmarker</strong> : Comparer la taille de votre catalogue vs concurrents</li>
+                    <li>• <strong className="text-green-400">Données réelles</strong> : Les sitemaps sont fetchés et parsés en temps réel</li>
+                    <li>• <strong>Diff</strong> : Compare avec le dernier scan (stocké en localStorage)</li>
+                    <li>• <strong>Sitemap index</strong> : Si le sitemap contient des sous-sitemaps, on en scanne jusqu'à 50 et extrapole</li>
+                    <li>• <strong>Proxy CORS</strong> : Utilise api.allorigins.win pour contourner les restrictions navigateur</li>
                 </ul>
             </div>
         </div>
@@ -1096,6 +1241,293 @@ function StatusChecker() {
     );
 }
 
+// ===== PRICE TRACKER - Connexion Supabase =====
+function PriceTrackerPage() {
+    const [offers, setOffers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedOffer, setSelectedOffer] = useState(null);
+    const [supabaseConfig, setSupabaseConfig] = useState(() => {
+        const saved = localStorage.getItem('ci_supabase_config');
+        if (saved) try { return JSON.parse(saved); } catch(e) {}
+        return { url: '', key: '' };
+    });
+    const [configOpen, setConfigOpen] = useState(false);
+
+    // Charger les offres depuis Supabase
+    const loadOffers = async () => {
+        if (!supabaseConfig.url || !supabaseConfig.key) {
+            setError('Configuration Supabase manquante. Cliquez sur "Configurer" pour ajouter vos credentials.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Fetch offers
+            const offersRes = await fetch(`${supabaseConfig.url}/rest/v1/offers?select=*&order=created_at.desc`, {
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`
+                }
+            });
+            if (!offersRes.ok) throw new Error(`Offers: HTTP ${offersRes.status}`);
+            const offersData = await offersRes.json();
+
+            // Fetch price checks
+            const checksRes = await fetch(`${supabaseConfig.url}/rest/v1/price_checks?select=*&order=check_date.desc`, {
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`
+                }
+            });
+            if (!checksRes.ok) throw new Error(`Checks: HTTP ${checksRes.status}`);
+            const checksData = await checksRes.json();
+
+            // Associer les checks aux offers
+            const offersWithHistory = offersData.map(offer => ({
+                ...offer,
+                history: checksData.filter(c => c.offer_id === offer.id)
+            }));
+
+            setOffers(offersWithHistory);
+        } catch (err) {
+            setError(`Erreur: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Sauvegarder la config
+    const saveConfig = () => {
+        localStorage.setItem('ci_supabase_config', JSON.stringify(supabaseConfig));
+        setConfigOpen(false);
+        loadOffers();
+    };
+
+    // Charger au mount si config présente
+    useEffect(() => {
+        if (supabaseConfig.url && supabaseConfig.key) {
+            loadOffers();
+        }
+    }, []);
+
+    // Calculer l'écart prix affiché vs prix réel
+    const calcDiff = (offer) => {
+        if (!offer.history || offer.history.length === 0) return null;
+        const lastCheck = offer.history[0];
+        if (!offer.displayed_price || !lastCheck.checkout_price) return null;
+        const diff = lastCheck.checkout_price - offer.displayed_price;
+        const pct = (diff / offer.displayed_price * 100).toFixed(1);
+        return { diff: diff.toFixed(2), pct, isHigher: diff > 0 };
+    };
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Relevés de Prix</h1>
+                    <p className="text-gray-500">Données capturées via l'extension Chrome</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setConfigOpen(!configOpen)}
+                        className="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition flex items-center space-x-2"
+                    >
+                        <i className="fas fa-cog"></i>
+                        <span>Configurer</span>
+                    </button>
+                    <button
+                        onClick={loadOffers}
+                        disabled={loading || !supabaseConfig.url}
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                            loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                        }`}
+                    >
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                    </button>
+                </div>
+            </div>
+
+            {/* Config panel */}
+            {configOpen && (
+                <div className="glass rounded-xl border border-accent-blue/50 p-4 mb-6 bg-accent-blue/5">
+                    <h3 className="font-semibold mb-3 flex items-center"><i className="fas fa-database text-accent-blue mr-2"></i>Configuration Supabase</h3>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">URL Supabase</label>
+                            <input
+                                type="text"
+                                value={supabaseConfig.url}
+                                onChange={(e) => setSupabaseConfig({...supabaseConfig, url: e.target.value})}
+                                placeholder="https://xxxxx.supabase.co"
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">API Key (anon/public)</label>
+                            <input
+                                type="password"
+                                value={supabaseConfig.key}
+                                onChange={(e) => setSupabaseConfig({...supabaseConfig, key: e.target.value})}
+                                placeholder="eyJhbGciOiJIUzI1NiIs..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                            />
+                        </div>
+                    </div>
+                    <button onClick={saveConfig} className="px-4 py-2 bg-accent-blue hover:bg-blue-600 rounded-lg font-medium transition">
+                        <i className="fas fa-save mr-2"></i>Sauvegarder et connecter
+                    </button>
+                </div>
+            )}
+
+            {/* Error */}
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {/* Stats */}
+            {offers.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Offres suivies</div>
+                        <div className="text-2xl font-bold">{offers.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Relevés total</div>
+                        <div className="text-2xl font-bold">{offers.reduce((sum, o) => sum + (o.history?.length || 0), 0)}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Avec écart &gt;5%</div>
+                        <div className="text-2xl font-bold text-yellow-400">
+                            {offers.filter(o => { const d = calcDiff(o); return d && Math.abs(parseFloat(d.pct)) > 5; }).length}
+                        </div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Stores</div>
+                        <div className="text-2xl font-bold">{new Set(offers.map(o => o.store).filter(Boolean)).size}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Offers table */}
+            {offers.length > 0 ? (
+                <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-dark-700">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Offre</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Store</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Prix affiché</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Prix checkout</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Écart</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Relevés</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dark-600">
+                            {offers.map(offer => {
+                                const diff = calcDiff(offer);
+                                const lastCheck = offer.history?.[0];
+                                return (
+                                    <tr key={offer.id} className="hover:bg-dark-700/50">
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium truncate max-w-xs" title={offer.name}>{offer.name || 'Sans nom'}</div>
+                                            <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-400">{offer.store || '-'}</td>
+                                        <td className="px-4 py-3 text-right font-mono">
+                                            {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono">
+                                            {lastCheck?.checkout_price ? `${lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            {diff ? (
+                                                <span className={`font-semibold ${diff.isHigher ? 'text-red-400' : 'text-green-400'}`}>
+                                                    {diff.isHigher ? '+' : ''}{diff.diff}€ ({diff.pct}%)
+                                                </span>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="px-2 py-1 bg-dark-600 rounded text-sm">{offer.history?.length || 0}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <button
+                                                onClick={() => setSelectedOffer(selectedOffer?.id === offer.id ? null : offer)}
+                                                className="px-2 py-1 bg-accent-blue/20 text-accent-blue rounded text-xs hover:bg-accent-blue/30"
+                                            >
+                                                {selectedOffer?.id === offer.id ? 'Fermer' : 'Historique'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            ) : !loading && !error && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucune offre trouvée</p>
+                    <p className="text-sm text-gray-600 mt-2">Utilisez l'extension Chrome pour capturer des prix</p>
+                </div>
+            )}
+
+            {/* Detail modal */}
+            {selectedOffer && (
+                <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold">
+                            <i className="fas fa-history text-accent-blue mr-2"></i>
+                            Historique: {selectedOffer.name || selectedOffer.url}
+                        </h3>
+                        {selectedOffer.displayed_price_screenshot && (
+                            <a href={selectedOffer.displayed_price_screenshot} target="_blank" className="text-sm text-accent-blue hover:underline">
+                                <i className="fas fa-image mr-1"></i>Screenshot
+                            </a>
+                        )}
+                    </div>
+                    {selectedOffer.history?.length > 0 ? (
+                        <div className="space-y-2 max-h-64 overflow-auto">
+                            {selectedOffer.history.map((check, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+                                    <div className="flex items-center space-x-4">
+                                        <span className="text-sm text-gray-400">{new Date(check.check_date).toLocaleString('fr-FR')}</span>
+                                        <span className="font-mono">{check.checkout_price?.toFixed(2)}€</span>
+                                        {check.payment_method && <span className="text-xs text-gray-500">({check.payment_method})</span>}
+                                    </div>
+                                    {check.screenshot_url && (
+                                        <a href={check.screenshot_url} target="_blank" className="text-accent-blue hover:underline text-sm">
+                                            <i className="fas fa-external-link-alt"></i>
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-center py-4">Aucun relevé pour cette offre</p>
+                    )}
+                </div>
+            )}
+
+            {/* Info */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Extension Chrome</strong> : Clic droit sur un prix → "Capture this price"</li>
+                    <li>• <strong>Créer une offre</strong> : Clic droit → "Add as offer to track"</li>
+                    <li>• <strong>Mettre à jour</strong> : Clic droit sur le prix checkout → "Update offer price"</li>
+                    <li>• <strong>Données</strong> : Stockées dans Supabase, synchronisées ici</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
 function AlertsPage() {
     return (
         <div>
@@ -1155,13 +1587,60 @@ function AlertsPage() {
 }
 
 function SettingsPage() {
-    const [webhookUrl, setWebhookUrl] = useState('');
-    const [discordEnabled, setDiscordEnabled] = useState(false);
-    const [testSent, setTestSent] = useState(false);
+    const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('ci_discord_webhook') || '');
+    const [discordEnabled, setDiscordEnabled] = useState(() => localStorage.getItem('ci_discord_enabled') === 'true');
+    const [testStatus, setTestStatus] = useState('idle'); // idle, sending, success, error
+    const [testError, setTestError] = useState('');
 
-    const sendTestMessage = () => {
-        setTestSent(true);
-        setTimeout(() => setTestSent(false), 3000);
+    // Sauvegarder les settings
+    useEffect(() => {
+        localStorage.setItem('ci_discord_webhook', webhookUrl);
+        localStorage.setItem('ci_discord_enabled', discordEnabled.toString());
+    }, [webhookUrl, discordEnabled]);
+
+    // Envoyer un vrai message Discord
+    const sendTestMessage = async () => {
+        if (!webhookUrl || !webhookUrl.includes('discord.com/api/webhooks')) {
+            setTestStatus('error');
+            setTestError('URL webhook invalide');
+            setTimeout(() => setTestStatus('idle'), 3000);
+            return;
+        }
+
+        setTestStatus('sending');
+        setTestError('');
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'CI War Room',
+                    avatar_url: 'https://cdn-icons-png.flaticon.com/512/2111/2111370.png',
+                    embeds: [{
+                        title: '🎯 Test CI War Room',
+                        description: 'Connexion réussie ! Les alertes seront envoyées sur ce canal.',
+                        color: 0x5865F2,
+                        fields: [
+                            { name: '📊 Status', value: 'Connecté', inline: true },
+                            { name: '⏰ Date', value: new Date().toLocaleString('fr-FR'), inline: true }
+                        ],
+                        footer: { text: 'CI War Room - Gaming Keys Intelligence' }
+                    }]
+                })
+            });
+
+            if (response.ok || response.status === 204) {
+                setTestStatus('success');
+                setTimeout(() => setTestStatus('idle'), 3000);
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            setTestStatus('error');
+            setTestError(error.message || 'Erreur de connexion');
+            setTimeout(() => setTestStatus('idle'), 5000);
+        }
     };
 
     return (
@@ -1227,15 +1706,21 @@ function SettingsPage() {
 
                             <button
                                 onClick={sendTestMessage}
-                                disabled={!webhookUrl}
+                                disabled={!webhookUrl || testStatus === 'sending'}
                                 className={`w-full py-2 rounded-lg font-medium transition flex items-center justify-center space-x-2 ${
                                     !webhookUrl ? 'bg-dark-600 text-gray-500 cursor-not-allowed' :
-                                    testSent ? 'bg-green-500 text-white' :
+                                    testStatus === 'sending' ? 'bg-gray-600 cursor-wait' :
+                                    testStatus === 'success' ? 'bg-green-500 text-white' :
+                                    testStatus === 'error' ? 'bg-red-500 text-white' :
                                     'bg-purple-500 hover:bg-purple-600 text-white'
                                 }`}
                             >
-                                {testSent ? (
+                                {testStatus === 'sending' ? (
+                                    <><i className="fas fa-spinner fa-spin"></i><span>Envoi...</span></>
+                                ) : testStatus === 'success' ? (
                                     <><i className="fas fa-check"></i><span>Message envoyé!</span></>
+                                ) : testStatus === 'error' ? (
+                                    <><i className="fas fa-times"></i><span>{testError || 'Erreur'}</span></>
                                 ) : (
                                     <><i className="fab fa-discord"></i><span>Envoyer un message test</span></>
                                 )}
