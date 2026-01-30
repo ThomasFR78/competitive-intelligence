@@ -842,95 +842,238 @@ function SitemapChecker() {
 }
 
 function PriceChecker({ selectedGame, setSelectedGame }) {
-    const games = Object.keys(gamePrices);
-    const prices = gamePrices[selectedGame] || [];
-    const sortedPrices = [...prices].sort((a, b) => a.price - b.price);
-    const minPrice = sortedPrices.length > 0 ? sortedPrices[0].price : 0;
-    const maxPrice = sortedPrices.length > 0 ? sortedPrices[sortedPrices.length - 1].price : 0;
+    const [offers, setOffers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Config Supabase (partagée avec PriceTracker)
+    const supabaseConfig = {
+        url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+    };
+
+    // Charger les données depuis Supabase
+    const loadData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [offersRes, checksRes] = await Promise.all([
+                fetch(`${supabaseConfig.url}/rest/v1/offers?select=*&order=created_at.desc`, {
+                    headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+                }),
+                fetch(`${supabaseConfig.url}/rest/v1/price_checks?select=*&order=check_date.desc`, {
+                    headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+                })
+            ]);
+            if (!offersRes.ok || !checksRes.ok) throw new Error('Erreur chargement');
+            const [offersData, checksData] = await Promise.all([offersRes.json(), checksRes.json()]);
+
+            // Associer les checks aux offers
+            const offersWithHistory = offersData.map(offer => ({
+                ...offer,
+                history: checksData.filter(c => c.offer_id === offer.id),
+                lastCheck: checksData.find(c => c.offer_id === offer.id)
+            }));
+            setOffers(offersWithHistory);
+
+            // Sélectionner le premier jeu si aucun sélectionné
+            if (!selectedGame && offersWithHistory.length > 0) {
+                const games = [...new Set(offersWithHistory.map(o => o.name).filter(Boolean))];
+                if (games.length > 0) setSelectedGame(games[0]);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    // Extraire les jeux uniques
+    const games = [...new Set(offers.map(o => o.name).filter(Boolean))];
+
+    // Filtrer les offres pour le jeu sélectionné
+    const gameOffers = offers.filter(o => o.name === selectedGame);
+
+    // Calculer les stats de précision par source (comparateur/marchand)
+    const calculatePrecision = (offer) => {
+        if (!offer.displayed_price || !offer.lastCheck?.checkout_price) return null;
+        const diff = offer.lastCheck.checkout_price - offer.displayed_price;
+        const pct = (diff / offer.displayed_price * 100);
+        return { diff, pct, isAccurate: Math.abs(pct) < 2 };
+    };
+
+    // Trier par écart (les plus précis d'abord)
+    const sortedOffers = [...gameOffers].sort((a, b) => {
+        const precA = calculatePrecision(a);
+        const precB = calculatePrecision(b);
+        if (!precA && !precB) return 0;
+        if (!precA) return 1;
+        if (!precB) return -1;
+        return Math.abs(precA.pct) - Math.abs(precB.pct);
+    });
+
+    // Stats globales
+    const offersWithPrecision = sortedOffers.filter(o => calculatePrecision(o));
+    const avgPrecision = offersWithPrecision.length > 0
+        ? offersWithPrecision.reduce((sum, o) => sum + Math.abs(calculatePrecision(o).pct), 0) / offersWithPrecision.length
+        : 0;
+    const accurateCount = offersWithPrecision.filter(o => calculatePrecision(o).isAccurate).length;
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">Price Checker</h1>
-                <p className="text-gray-500">Comparaison des prix en temps réel sur tous les marchands</p>
-            </div>
-
-            <div className="glass rounded-xl border border-dark-600 p-4 mb-6">
-                <label className="block text-sm text-gray-400 mb-3">Sélectionner un jeu</label>
-                <div className="flex flex-wrap gap-2">
-                    {games.map(game => (
-                        <button
-                            key={game}
-                            onClick={() => setSelectedGame(game)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                                selectedGame === game ? 'bg-accent-blue text-white' : 'bg-dark-700 hover:bg-dark-600 text-gray-300'
-                            }`}
-                        >
-                            {game}
-                        </button>
-                    ))}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Price Checker</h1>
+                    <p className="text-gray-500">Précision des prix comparateurs vs prix réels marchands</p>
                 </div>
+                <button
+                    onClick={loadData}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                </button>
             </div>
 
-            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
-                <div className="p-4 border-b border-dark-600 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold">{selectedGame}</h2>
-                        <p className="text-sm text-gray-500">{prices.length} offres trouvées</p>
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {games.length > 0 ? (
+                <>
+                    <div className="glass rounded-xl border border-dark-600 p-4 mb-6">
+                        <label className="block text-sm text-gray-400 mb-3">Sélectionner un jeu ({games.length} disponibles)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {games.map(game => (
+                                <button
+                                    key={game}
+                                    onClick={() => setSelectedGame(game)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                                        selectedGame === game ? 'bg-accent-blue text-white' : 'bg-dark-700 hover:bg-dark-600 text-gray-300'
+                                    }`}
+                                >
+                                    {game}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-sm text-gray-500">Meilleur prix</div>
-                        <div className="text-2xl font-bold text-green-400">{minPrice.toFixed(2)}€</div>
-                    </div>
-                </div>
-                <table className="w-full">
-                    <thead className="bg-dark-700">
-                        <tr>
-                            <th className="text-left px-4 py-3 text-sm font-semibold">Marchand</th>
-                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix</th>
-                            <th className="text-center px-4 py-3 text-sm font-semibold">vs meilleur</th>
-                            <th className="text-center px-4 py-3 text-sm font-semibold">Région</th>
-                            <th className="text-center px-4 py-3 text-sm font-semibold">Stock</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-dark-600">
-                        {sortedPrices.map((item, i) => (
-                            <tr key={i} className={`hover:bg-dark-700/50 ${i === 0 ? 'bg-green-500/10' : ''}`}>
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="font-medium">{item.merchant}</span>
-                                        {i === 0 && <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">BEST</span>}
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    <span className={`text-lg font-bold ${i === 0 ? 'text-green-400' : ''}`}>{item.price.toFixed(2)}€</span>
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                    {i === 0 ? (
-                                        <span className="text-green-400">-</span>
-                                    ) : (
-                                        <span className="text-red-400">+{(item.price - minPrice).toFixed(2)}€</span>
-                                    )}
-                                </td>
-                                <td className="px-4 py-3 text-center text-sm text-gray-400">{item.region}</td>
-                                <td className="px-4 py-3 text-center">
-                                    {item.inStock ? (
-                                        <span className="text-green-400"><i className="fas fa-check"></i></span>
-                                    ) : (
-                                        <span className="text-red-400"><i className="fas fa-times"></i></span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
 
-            <div className="mt-4 glass rounded-xl border border-dark-600 p-4">
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Écart min-max:</span>
-                    <span className="font-bold text-yellow-400">{(maxPrice - minPrice).toFixed(2)}€ ({((maxPrice - minPrice) / minPrice * 100).toFixed(1)}%)</span>
+                    {selectedGame && sortedOffers.length > 0 && (
+                        <>
+                            {/* Stats */}
+                            <div className="grid grid-cols-4 gap-4 mb-6">
+                                <div className="glass rounded-xl border border-dark-600 p-4">
+                                    <div className="text-sm text-gray-500 mb-1">Offres suivies</div>
+                                    <div className="text-2xl font-bold">{sortedOffers.length}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-dark-600 p-4">
+                                    <div className="text-sm text-gray-500 mb-1">Avec relevé prix</div>
+                                    <div className="text-2xl font-bold">{offersWithPrecision.length}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                                    <div className="text-sm text-green-400 mb-1">Prix précis (&lt;2%)</div>
+                                    <div className="text-2xl font-bold text-green-400">{accurateCount}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
+                                    <div className="text-sm text-yellow-400 mb-1">Écart moyen</div>
+                                    <div className="text-2xl font-bold text-yellow-400">{avgPrecision.toFixed(1)}%</div>
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                                <div className="p-4 border-b border-dark-600">
+                                    <h2 className="text-xl font-bold">{selectedGame}</h2>
+                                    <p className="text-sm text-gray-500">Comparaison prix affiché (comparateur) vs prix réel (checkout marchand)</p>
+                                </div>
+                                <table className="w-full">
+                                    <thead className="bg-dark-700">
+                                        <tr>
+                                            <th className="text-left px-4 py-3 text-sm font-semibold">Source / Marchand</th>
+                                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix affiché</th>
+                                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix checkout</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Écart</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Précision</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Preuve</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dark-600">
+                                        {sortedOffers.map((offer, i) => {
+                                            const precision = calculatePrecision(offer);
+                                            return (
+                                                <tr key={offer.id} className={`hover:bg-dark-700/50 ${precision?.isAccurate ? 'bg-green-500/5' : precision && Math.abs(precision.pct) > 10 ? 'bg-red-500/5' : ''}`}>
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium">{offer.store || 'Inconnu'}</div>
+                                                        <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono">
+                                                        {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono">
+                                                        {offer.lastCheck?.checkout_price ? `${offer.lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {precision ? (
+                                                            <span className={`font-semibold ${precision.diff > 0 ? 'text-red-400' : precision.diff < 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                                                                {precision.diff > 0 ? '+' : ''}{precision.diff.toFixed(2)}€
+                                                            </span>
+                                                        ) : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {precision ? (
+                                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                                precision.isAccurate ? 'bg-green-500/20 text-green-400' :
+                                                                Math.abs(precision.pct) > 10 ? 'bg-red-500/20 text-red-400' :
+                                                                'bg-yellow-500/20 text-yellow-400'
+                                                            }`}>
+                                                                {precision.pct > 0 ? '+' : ''}{precision.pct.toFixed(1)}%
+                                                            </span>
+                                                        ) : <span className="text-gray-500">-</span>}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {offer.lastCheck?.screenshot_url ? (
+                                                            <a href={offer.lastCheck.screenshot_url} target="_blank" className="text-accent-blue hover:underline">
+                                                                <i className="fas fa-image"></i>
+                                                            </a>
+                                                        ) : offer.displayed_price_screenshot ? (
+                                                            <a href={offer.displayed_price_screenshot} target="_blank" className="text-accent-blue hover:underline">
+                                                                <i className="fas fa-image"></i>
+                                                            </a>
+                                                        ) : '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </>
+            ) : !loading && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucune donnée de prix</p>
+                    <p className="text-sm text-gray-600 mt-2">Utilisez l'extension Chrome pour capturer des relevés de prix</p>
                 </div>
+            )}
+
+            {/* Légende */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comprendre les données</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Prix affiché</strong> : Prix vu sur le comparateur (AllKeyShop, GG.deals...)</li>
+                    <li>• <strong>Prix checkout</strong> : Prix réel au moment de payer chez le marchand</li>
+                    <li>• <strong className="text-green-400">Précis (&lt;2%)</strong> : Le comparateur affiche le bon prix</li>
+                    <li>• <strong className="text-yellow-400">Écart modéré (2-10%)</strong> : Légère différence</li>
+                    <li>• <strong className="text-red-400">Trompeur (&gt;10%)</strong> : Prix affiché très différent du réel</li>
+                </ul>
             </div>
         </div>
     );
