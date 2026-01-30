@@ -1,0 +1,6 @@
+{
+    "rewrites": [
+          { "source": "/api/competitors/:id/history", "destination": "/api/competitors/[id]/history" },
+          { "source": "/api/competitors/:id", "destination": "/api/competitors/[id]" }
+    ]
+}
