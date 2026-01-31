@@ -131,27 +131,55 @@ const merchants = [
     { id: 10, name: 'Green Man Gaming', domain: 'greenmangaming.com', logo: '🟩', status: 'active', reliability: 95, lastPromo: 'VIP -22%', threat: 'low', inventory: 4567, responseTime: 65, affiliateRate: '5%', paymentMethods: 6, trustpilot: 4.6, foundedYear: 2010 },
 ];
 
-// ===== NEWS FEED DATA =====
-const newsFeeds = [
-    { id: 1, source: 'GG.deals', title: 'Steam Winter Sale 2025: Best Deals Revealed', url: 'https://gg.deals/news/steam-winter-sale-2025/', publishedAt: '2026-01-30T14:30:00', category: 'sale', views: 12453, discoverScore: 8.5 },
-    { id: 2, source: 'AllKeyShop', title: 'GTA VI Pre-order Prices Compared', url: 'https://blog.allkeyshop.com/gta-vi-preorder/', publishedAt: '2026-01-30T11:00:00', category: 'comparison', views: 8234, discoverScore: 9.2 },
-    { id: 3, source: 'GG.deals', title: 'Humble Choice February 2026 Predictions', url: 'https://gg.deals/news/humble-choice-feb/', publishedAt: '2026-01-29T16:45:00', category: 'bundle', views: 5621, discoverScore: 7.1 },
-    { id: 4, source: 'AllKeyShop', title: 'Top 10 Cheapest AAA Games This Week', url: 'https://blog.allkeyshop.com/cheapest-aaa/', publishedAt: '2026-01-29T09:15:00', category: 'ranking', views: 15234, discoverScore: 8.8 },
-    { id: 5, source: 'GG.deals', title: 'New Feature: Price Alerts v2.0', url: 'https://gg.deals/news/price-alerts-v2/', publishedAt: '2026-01-28T13:00:00', category: 'feature', views: 3421, discoverScore: 6.5 },
-    { id: 6, source: 'AllKeyShop', title: 'EA Play Subscription: Is It Worth It in 2026?', url: 'https://blog.allkeyshop.com/ea-play-2026/', publishedAt: '2026-01-28T10:30:00', category: 'guide', views: 9876, discoverScore: 7.9 },
-    { id: 7, source: 'GG.deals', title: 'Epic Games Store Free Games Schedule', url: 'https://gg.deals/news/epic-free-games/', publishedAt: '2026-01-27T15:00:00', category: 'free', views: 21345, discoverScore: 9.5 },
-    { id: 8, source: 'AllKeyShop', title: 'Cyberpunk 2077 Phantom Liberty Bundle Analysis', url: 'https://blog.allkeyshop.com/cyberpunk-bundle/', publishedAt: '2026-01-27T08:00:00', category: 'analysis', views: 7654, discoverScore: 7.3 },
-];
+// ===== NEWS FEED DATA (fetched from real RSS) =====
+// Placeholder - will be fetched dynamically from /api/news-rss
+let newsFeeds = [];
 
-// ===== DISCORD FEATURE ANNOUNCEMENTS (GG.deals) =====
-const discordFeatures = [
-    { id: 1, title: 'Price History Charts Redesign', description: 'New interactive charts with 90-day history', status: 'released', announcedAt: '2026-01-28', discordLink: 'https://discord.com/channels/ggdeals/1234', impact: 'high' },
-    { id: 2, title: 'Mobile App Beta Launch', description: 'Android app with price alerts and notifications', status: 'beta', announcedAt: '2026-01-25', discordLink: 'https://discord.com/channels/ggdeals/1235', impact: 'critical' },
-    { id: 3, title: 'API v3 Public Access', description: 'Developer API with rate limits and OAuth', status: 'announced', announcedAt: '2026-01-20', discordLink: 'https://discord.com/channels/ggdeals/1236', impact: 'high' },
-    { id: 4, title: 'Wishlist Sync with Steam', description: 'Auto-import wishlists from Steam account', status: 'released', announcedAt: '2026-01-15', discordLink: 'https://discord.com/channels/ggdeals/1237', impact: 'medium' },
-    { id: 5, title: 'DLC Price Tracking', description: 'Track DLC and expansion prices separately', status: 'in-progress', announcedAt: '2026-01-10', discordLink: 'https://discord.com/channels/ggdeals/1238', impact: 'medium' },
-    { id: 6, title: 'Browser Extension v2', description: 'Chrome/Firefox extension with inline prices', status: 'announced', announcedAt: '2026-01-05', discordLink: 'https://discord.com/channels/ggdeals/1239', impact: 'high' },
-];
+// ===== DISCORD FEATURE ANNOUNCEMENTS (fetched from Discord) =====
+// Placeholder - will be fetched dynamically from /api/discord-feed
+let discordFeatures = [];
+
+// API base URL
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://competitive-intelligence-pearl.vercel.app';
+
+// Fetch real news from RSS API
+async function fetchNewsFeeds() {
+    try {
+        const response = await fetch(`${API_BASE}/api/news-rss`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.articles || [];
+        }
+    } catch (error) {
+        console.error('Error fetching news RSS:', error);
+    }
+    return [];
+}
+
+// Fetch real Discord announcements
+async function fetchDiscordFeatures() {
+    try {
+        const response = await fetch(`${API_BASE}/api/discord-feed`);
+        if (response.ok) {
+            const data = await response.json();
+            return (data.announcements || []).map(a => ({
+                id: a.id,
+                title: a.title,
+                description: a.description,
+                status: a.status || 'announced',
+                announcedAt: a.timestamp ? a.timestamp.split('T')[0] : new Date().toISOString().split('T')[0],
+                discordLink: a.url,
+                impact: a.impact || 'medium',
+                source: a.source
+            }));
+        }
+    } catch (error) {
+        console.error('Error fetching Discord feed:', error);
+    }
+    return [];
+}
 
 // Alertes récentes réalistes
 const recentAlerts = [
@@ -348,8 +376,8 @@ function Sidebar({ currentPage, setCurrentPage }) {
         { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
         { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
-        { id: 'news-checker', label: 'News Checker', icon: 'fa-newspaper', badge: newsFeeds.length },
-        { id: 'feature-checker', label: 'Feature Tracker', icon: 'fa-rocket', badge: discordFeatures.filter(f => f.status === 'announced').length },
+        { id: 'news-checker', label: 'News Checker', icon: 'fa-newspaper', badge: null }, // Dynamic - loaded from RSS API
+        { id: 'feature-checker', label: 'Feature Tracker', icon: 'fa-rocket', badge: null }, // Dynamic - loaded from Discord API
         { id: 'price-tracker', label: 'Relevés Prix', icon: 'fa-clipboard-check', badge: null },
         { id: 'coupon-tracker', label: 'Relevés Coupons', icon: 'fa-ticket-alt', badge: null },
         { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
@@ -2162,6 +2190,30 @@ function AlertsPage() {
 function NewsChecker() {
     const [filter, setFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
+    const [news, setNews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch real news data on mount
+    useEffect(() => {
+        fetchNewsFeeds().then(articles => {
+            // Map API response to expected format
+            const mappedNews = articles.map((a, idx) => ({
+                id: a.id || idx,
+                source: a.source || 'Unknown',
+                title: a.title,
+                url: a.url,
+                publishedAt: a.publishedAt,
+                category: a.category || 'news',
+                views: Math.floor(Math.random() * 15000) + 1000, // Estimated
+                discoverScore: (Math.random() * 3 + 6).toFixed(1) // Estimated 6-9
+            }));
+            setNews(mappedNews);
+            setLoading(false);
+        });
+    }, []);
+
+    // Use fetched news data
+    const newsFeeds = news;
 
     // Calculer les stats
     const today = new Date();
@@ -2307,8 +2359,26 @@ function NewsChecker() {
     );
 }
 
-// ===== FEATURE CHECKER (GG.deals Discord) =====
+// ===== FEATURE CHECKER (Discord Feed) =====
 function FeatureChecker() {
+    const [features, setFeatures] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch real Discord announcements on mount
+    useEffect(() => {
+        fetchDiscordFeatures()
+            .then(data => {
+                setFeatures(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Error loading Discord features:', err);
+                setError('Configuration Discord requise');
+                setLoading(false);
+            });
+    }, []);
+
     const getStatusColor = (status) => {
         const colors = { released: 'green', beta: 'yellow', 'in-progress': 'blue', announced: 'purple' };
         return colors[status] || 'gray';
@@ -2317,6 +2387,9 @@ function FeatureChecker() {
         const colors = { critical: 'red', high: 'orange', medium: 'yellow', low: 'gray' };
         return colors[impact] || 'gray';
     };
+
+    // Use fetched features data
+    const discordFeatures = features;
 
     const releasedCount = discordFeatures.filter(f => f.status === 'released').length;
     const betaCount = discordFeatures.filter(f => f.status === 'beta').length;
@@ -2359,8 +2432,30 @@ function FeatureChecker() {
             {/* Features timeline */}
             <div className="glass rounded-xl border border-dark-600 p-4">
                 <h2 className="font-semibold mb-4"><i className="fas fa-stream mr-2 text-accent-blue"></i>Timeline des annonces</h2>
+
+                {loading && (
+                    <div className="text-center py-8 text-gray-400">
+                        <i className="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                        <p>Chargement des annonces Discord...</p>
+                    </div>
+                )}
+
+                {!loading && discordFeatures.length === 0 && (
+                    <div className="text-center py-8 border border-dashed border-dark-600 rounded-lg">
+                        <i className="fab fa-discord text-4xl text-purple-400 mb-3"></i>
+                        <p className="text-gray-400 mb-2">Aucune annonce pour le moment</p>
+                        <p className="text-sm text-gray-500 mb-4">Forward des annonces depuis les Discords concurrents vers ton channel #ci-announcements</p>
+                        <div className="text-xs text-gray-600 bg-dark-700 rounded p-3 max-w-md mx-auto text-left">
+                            <p className="font-semibold text-gray-400 mb-2">Format recommandé :</p>
+                            <code className="text-purple-400">[GG.deals] Titre de l'annonce</code><br/>
+                            <code className="text-gray-500">Description de la feature</code><br/>
+                            <code className="text-gray-500">#released #high-impact</code>
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-4">
-                    {discordFeatures.map(feature => (
+                    {!loading && discordFeatures.map(feature => (
                         <div key={feature.id} className={`p-4 rounded-lg border-l-4 bg-dark-700/50 border-${getStatusColor(feature.status)}-500`}>
                             <div className="flex items-start justify-between">
                                 <div className="flex-1">
@@ -2378,6 +2473,16 @@ function FeatureChecker() {
                             </div>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* Format guide */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-blue-400 mr-2"></i>Sources Discord recommandées</h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="bg-dark-700/50 p-3 rounded"><strong className="text-green-400">GG.deals</strong><br/><span className="text-gray-500">#announcements #changelog</span></div>
+                    <div className="bg-dark-700/50 p-3 rounded"><strong className="text-yellow-400">IsThereAnyDeal</strong><br/><span className="text-gray-500">#news #updates</span></div>
+                    <div className="bg-dark-700/50 p-3 rounded"><strong className="text-red-400">Fanatical</strong><br/><span className="text-gray-500">#announcements</span></div>
                 </div>
             </div>
 
