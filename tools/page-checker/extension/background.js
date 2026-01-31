@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000';
+// Production URL - Competitive Intelligence API
+const API_URL = 'https://competitive-intelligence-pearl.vercel.app';
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
