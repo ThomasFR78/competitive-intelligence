@@ -248,15 +248,21 @@ const gamePrices = {
     ],
 };
 
-const sitemapHistory = [
-    { date: '30 Jan', allkeyshop: 847523, ggdeals: 623847, itad: 234156, dlcompare: 312456 },
-    { date: '29 Jan', allkeyshop: 847289, ggdeals: 623435, itad: 234067, dlcompare: 312389 },
-    { date: '28 Jan', allkeyshop: 846892, ggdeals: 622980, itad: 233945, dlcompare: 312234 },
-    { date: '27 Jan', allkeyshop: 846234, ggdeals: 622456, itad: 233812, dlcompare: 312156 },
-    { date: '26 Jan', allkeyshop: 845678, ggdeals: 621890, itad: 233698, dlcompare: 312078 },
-    { date: '25 Jan', allkeyshop: 845123, ggdeals: 621234, itad: 233589, dlcompare: 311967 },
-    { date: '24 Jan', allkeyshop: 844567, ggdeals: 620678, itad: 233478, dlcompare: 311856 },
-];
+// Generate dynamic sitemap history based on comparators
+function generateSitemapHistory() {
+    const days = ['30 Jan', '29 Jan', '28 Jan', '27 Jan', '26 Jan', '25 Jan', '24 Jan'];
+    return days.map((date, dayIndex) => {
+        const row = { date };
+        comparators.forEach(comp => {
+            // Use comparator's pagesIndexed as base, decrease slightly for older days
+            const basePages = comp.pagesIndexed || 100000;
+            const variance = Math.floor(basePages * 0.001 * dayIndex); // ~0.1% decrease per day
+            row[comp.name.toLowerCase().replace(/[^a-z0-9]/g, '')] = basePages - variance;
+        });
+        return row;
+    });
+}
+const sitemapHistory = generateSitemapHistory();
 
 // ===== STATUS CHECKER DATA (REAL URLs) =====
 const serviceStatus = {
@@ -707,20 +713,19 @@ function Dashboard({ setCurrentPage, visibleAlerts = [], comparatorsData = compa
                         <thead>
                             <tr className="text-gray-500 border-b border-dark-600">
                                 <th className="text-left py-2 font-medium">Date</th>
-                                <th className="text-right font-medium">🔵 AllKeyShop</th>
-                                <th className="text-right font-medium">🟢 GG.deals</th>
-                                <th className="text-right font-medium">🟡 ITAD</th>
-                                <th className="text-right font-medium">🔴 DLCompare</th>
+                                {comparators.map(comp => (
+                                    <th key={comp.id} className="text-right font-medium">{comp.logo} {comp.name}</th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
                             {sitemapHistory.map((row, i) => (
                                 <tr key={i} className="border-b border-dark-700/50">
                                     <td className="py-2 text-gray-400">{row.date}</td>
-                                    <td className="text-right font-mono">{row.allkeyshop.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.ggdeals.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.itad.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.dlcompare.toLocaleString()}</td>
+                                    {comparators.map(comp => {
+                                        const key = comp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        return <td key={comp.id} className="text-right font-mono">{(row[key] || 0).toLocaleString()}</td>;
+                                    })}
                                 </tr>
                             ))}
                         </tbody>
@@ -1592,7 +1597,7 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
 function StatusChecker() {
     const [scanning, setScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
-    const [expandedSites, setExpandedSites] = useState(['AllKeyShop', 'GG.deals', 'DLCompare']);
+    const [expandedSites, setExpandedSites] = useState(Object.keys(serviceStatus));
     const [statusData, setStatusData] = useState(serviceStatus);
 
     const toggleSite = (site) => {
@@ -2665,7 +2670,7 @@ function NewsChecker() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">News Checker</h1>
-                    <p className="text-gray-500">Veille éditoriale AllKeyShop & GG.deals</p>
+                    <p className="text-gray-500">Veille éditoriale des comparateurs de prix</p>
                 </div>
             </div>
 
@@ -2693,49 +2698,52 @@ function NewsChecker() {
                 </div>
             </div>
 
-            {/* Source comparison */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🔵 AllKeyShop</span>
-                        <span className={`text-sm ${aksNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{aksNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{aksNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{aksArticlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{aksNews.filter(n=>n.category==='comparison').length}</div><div className="text-gray-500">Comparatifs</div></div>
-                    </div>
-                </div>
-                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🟢 GG.deals</span>
-                        <span className={`text-sm ${ggdealsNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{ggdealsNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{ggdealsNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{ggArticlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{ggdealsNews.filter(n=>n.category==='sale').length}</div><div className="text-gray-500">Sales</div></div>
-                    </div>
-                </div>
-                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🟡 IsThereAnyDeal</span>
-                        <span className={`text-sm ${itadNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{itadNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{itadNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{itadNews.length > 0 ? (itadNews.filter(n => (today - new Date(n.publishedAt)) / (1000*60*60*24) < 7).length / 7).toFixed(1) : '0'}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{itadNews.filter(n=>n.category==='sale' || n.category==='free').length}</div><div className="text-gray-500">Deals</div></div>
-                    </div>
-                </div>
+            {/* Source comparison - Dynamic based on available sources */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {(() => {
+                    // Get unique sources from newsFeeds
+                    const sources = [...new Set(newsFeeds.map(n => n.source))];
+                    const sourceConfig = {
+                        'GG.deals': { logo: '🟢', color: 'green', mainCat: 'sale' },
+                        'AllKeyShop': { logo: '🔵', color: 'blue', mainCat: 'comparison' },
+                        'IsThereAnyDeal': { logo: '🟡', color: 'yellow', mainCat: 'sale' }
+                    };
+                    // Include all configured sources even if they have no data
+                    const allSources = [...new Set([...Object.keys(sourceConfig), ...sources])];
+
+                    return allSources.map(src => {
+                        const config = sourceConfig[src] || { logo: '⚪', color: 'gray', mainCat: 'news' };
+                        const srcNews = newsFeeds.filter(n => n.source === src);
+                        const weekSrcNews = srcNews.filter(n => (today - new Date(n.publishedAt)) / (1000*60*60*24) < 7);
+                        const articlesPerDay = srcNews.length > 0 ? (weekSrcNews.length / 7).toFixed(1) : '0';
+                        const mainCatCount = srcNews.filter(n => n.category === config.mainCat).length;
+
+                        return (
+                            <div key={src} className={`glass rounded-xl border border-${config.color}-500/30 p-4 bg-${config.color}-500/5`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="font-semibold">{config.logo} {src}</span>
+                                    <span className={`text-sm ${srcNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{srcNews.length > 0 ? 'Actif' : 'Inactif'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div><div className="text-lg font-bold">{srcNews.length}</div><div className="text-gray-500">Articles</div></div>
+                                    <div><div className="text-lg font-bold">{articlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
+                                    <div><div className="text-lg font-bold">{mainCatCount}</div><div className="text-gray-500">{config.mainCat === 'sale' ? 'Sales' : config.mainCat === 'comparison' ? 'Comparatifs' : 'News'}</div></div>
+                                </div>
+                            </div>
+                        );
+                    });
+                })()}
             </div>
 
-            {/* Filters */}
+            {/* Filters - Dynamic sources based on actual data */}
             <div className="flex space-x-4 mb-4">
-                <div className="flex space-x-2">
-                    {['all', 'GG.deals', 'AllKeyShop', 'IsThereAnyDeal'].map(src => (
+                <div className="flex space-x-2 flex-wrap gap-2">
+                    <button onClick={() => setSourceFilter('all')} className={`px-3 py-1 rounded-lg text-sm ${sourceFilter === 'all' ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>
+                        Toutes sources
+                    </button>
+                    {[...new Set(newsFeeds.map(n => n.source))].map(src => (
                         <button key={src} onClick={() => setSourceFilter(src)} className={`px-3 py-1 rounded-lg text-sm ${sourceFilter === src ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>
-                            {src === 'all' ? 'Toutes sources' : src}
+                            {src}
                         </button>
                     ))}
                 </div>
