@@ -322,6 +322,29 @@ const discordConfig = {
 };
 
 // ===== COMPOSANTS =====
+
+// Modal d'édition réutilisable
+function EditModal({ isOpen, onClose, title, children, onSave }) {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
+            <div className="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-4 border-b border-dark-600">
+                    <h3 className="font-bold text-lg">{title}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+                <div className="p-4">{children}</div>
+                <div className="flex justify-end space-x-2 p-4 border-t border-dark-600">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500">Annuler</button>
+                    <button onClick={onSave} className="px-4 py-2 bg-accent-blue rounded-lg hover:bg-blue-600">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function App() {
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [selectedGame, setSelectedGame] = useState('GTA VI');
@@ -332,6 +355,22 @@ function App() {
             const saved = localStorage.getItem('ci_dismissed_alerts');
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
+    });
+
+    // Gestion des comparateurs (persistés dans localStorage)
+    const [comparatorsData, setComparatorsData] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ci_comparators');
+            return saved ? JSON.parse(saved) : comparators;
+        } catch { return comparators; }
+    });
+
+    // Gestion des marchands (persistés dans localStorage)
+    const [merchantsData, setMerchantsData] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ci_merchants');
+            return saved ? JSON.parse(saved) : merchants;
+        } catch { return merchants; }
     });
 
     // Alertes visibles (non dismissées)
@@ -357,14 +396,65 @@ function App() {
         localStorage.removeItem('ci_dismissed_alerts');
     };
 
+    // CRUD Comparateurs
+    const updateComparator = (id, data) => {
+        const updated = comparatorsData.map(c => c.id === id ? { ...c, ...data } : c);
+        setComparatorsData(updated);
+        localStorage.setItem('ci_comparators', JSON.stringify(updated));
+    };
+
+    const addComparator = (data) => {
+        const newId = Math.max(...comparatorsData.map(c => c.id), 0) + 1;
+        const updated = [...comparatorsData, { ...data, id: newId }];
+        setComparatorsData(updated);
+        localStorage.setItem('ci_comparators', JSON.stringify(updated));
+    };
+
+    const deleteComparator = (id) => {
+        const updated = comparatorsData.filter(c => c.id !== id);
+        setComparatorsData(updated);
+        localStorage.setItem('ci_comparators', JSON.stringify(updated));
+    };
+
+    // CRUD Marchands
+    const updateMerchant = (id, data) => {
+        const updated = merchantsData.map(m => m.id === id ? { ...m, ...data } : m);
+        setMerchantsData(updated);
+        localStorage.setItem('ci_merchants', JSON.stringify(updated));
+    };
+
+    const addMerchant = (data) => {
+        const newId = Math.max(...merchantsData.map(m => m.id), 0) + 1;
+        const updated = [...merchantsData, { ...data, id: newId }];
+        setMerchantsData(updated);
+        localStorage.setItem('ci_merchants', JSON.stringify(updated));
+    };
+
+    const deleteMerchant = (id) => {
+        const updated = merchantsData.filter(m => m.id !== id);
+        setMerchantsData(updated);
+        localStorage.setItem('ci_merchants', JSON.stringify(updated));
+    };
+
+    // Reset data
+    const resetData = (type) => {
+        if (type === 'comparators') {
+            setComparatorsData(comparators);
+            localStorage.removeItem('ci_comparators');
+        } else if (type === 'merchants') {
+            setMerchantsData(merchants);
+            localStorage.removeItem('ci_merchants');
+        }
+    };
+
     return (
         <div className="flex min-h-screen">
-            <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} visibleAlerts={visibleAlerts} />
+            <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} visibleAlerts={visibleAlerts} comparatorsData={comparatorsData} merchantsData={merchantsData} />
             <main className="flex-1 p-6 overflow-auto">
-                {currentPage === 'dashboard' && <Dashboard setCurrentPage={setCurrentPage} visibleAlerts={visibleAlerts} />}
-                {currentPage === 'comparators' && <ComparatorsPage />}
-                {currentPage === 'merchants' && <MerchantsPage />}
-                {currentPage === 'sitemap' && <SitemapChecker />}
+                {currentPage === 'dashboard' && <Dashboard setCurrentPage={setCurrentPage} visibleAlerts={visibleAlerts} comparatorsData={comparatorsData} merchantsData={merchantsData} />}
+                {currentPage === 'comparators' && <ComparatorsPage data={comparatorsData} onUpdate={updateComparator} onAdd={addComparator} onDelete={deleteComparator} onReset={() => resetData('comparators')} />}
+                {currentPage === 'merchants' && <MerchantsPage data={merchantsData} onUpdate={updateMerchant} onAdd={addMerchant} onDelete={deleteMerchant} onReset={() => resetData('merchants')} />}
+                {currentPage === 'sitemap' && <SitemapChecker comparatorsData={comparatorsData} />}
                 {currentPage === 'news-checker' && <NewsChecker />}
                 {currentPage === 'feature-checker' && <FeatureChecker />}
                 {currentPage === 'price-tracker' && <PriceTrackerPage />}
@@ -378,7 +468,7 @@ function App() {
     );
 }
 
-function Sidebar({ currentPage, setCurrentPage, visibleAlerts = [] }) {
+function Sidebar({ currentPage, setCurrentPage, visibleAlerts = [], comparatorsData = comparators, merchantsData = merchants }) {
     const alertCount = Object.values(serviceStatus).reduce((acc, site) => {
         const mainAlerts = site.services.filter(s => s.status === 'offline' || s.status === 'warning').length;
         const merchantAlerts = site.merchantVouchers.filter(m => m.status === 'offline' || m.status === 'warning').length;
@@ -389,8 +479,8 @@ function Sidebar({ currentPage, setCurrentPage, visibleAlerts = [] }) {
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'fa-th-large' },
-        { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
-        { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
+        { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparatorsData.length },
+        { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchantsData.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
         { id: 'news-checker', label: 'News Checker', icon: 'fa-newspaper', badge: null }, // Dynamic - loaded from RSS API
         { id: 'feature-checker', label: 'Feature Tracker', icon: 'fa-rocket', badge: null }, // Dynamic - loaded from Discord API
@@ -463,9 +553,9 @@ function Sidebar({ currentPage, setCurrentPage, visibleAlerts = [] }) {
     );
 }
 
-function Dashboard({ setCurrentPage, visibleAlerts = [] }) {
-    const totalPages = comparators.reduce((sum, c) => sum + c.pagesIndexed, 0);
-    const totalNew24h = comparators.reduce((sum, c) => sum + c.newPages24h, 0);
+function Dashboard({ setCurrentPage, visibleAlerts = [], comparatorsData = comparators, merchantsData = merchants }) {
+    const totalPages = comparatorsData.reduce((sum, c) => sum + c.pagesIndexed, 0);
+    const totalNew24h = comparatorsData.reduce((sum, c) => sum + c.newPages24h, 0);
     const highAlerts = visibleAlerts.filter(a => a.severity === 'high').length;
 
     return (
@@ -484,8 +574,8 @@ function Dashboard({ setCurrentPage, visibleAlerts = [] }) {
             {/* Stats */}
             <div className="grid grid-cols-5 gap-4 mb-6">
                 {[
-                    { label: 'Comparateurs', value: comparators.length, icon: 'fa-balance-scale', color: 'blue' },
-                    { label: 'Marchands', value: merchants.length, icon: 'fa-store', color: 'green' },
+                    { label: 'Comparateurs', value: comparatorsData.length, icon: 'fa-balance-scale', color: 'blue' },
+                    { label: 'Marchands', value: merchantsData.length, icon: 'fa-store', color: 'green' },
                     { label: 'Pages indexées', value: (totalPages/1000000).toFixed(1) + 'M', icon: 'fa-file', color: 'purple' },
                     { label: 'Nouvelles 24h', value: '+' + totalNew24h, icon: 'fa-plus', color: 'yellow' },
                     { label: 'Alertes critiques', value: highAlerts, icon: 'fa-exclamation', color: 'red' },
@@ -607,17 +697,59 @@ function Dashboard({ setCurrentPage, visibleAlerts = [] }) {
     );
 }
 
-function ComparatorsPage() {
+function ComparatorsPage({ data = comparators, onUpdate, onAdd, onDelete, onReset }) {
+    const [editingItem, setEditingItem] = useState(null);
+    const [isAdding, setIsAdding] = useState(false);
+    const [formData, setFormData] = useState({});
+
+    const emptyForm = { name: '', domain: '', logo: '🔵', sitemapUrl: '', notes: '', threat: 'medium', pagesIndexed: 0, newPages24h: 0, lastCheck: new Date().toLocaleString('fr-FR') };
+
+    const openEdit = (item) => {
+        setFormData({ ...item });
+        setEditingItem(item.id);
+    };
+
+    const openAdd = () => {
+        setFormData({ ...emptyForm });
+        setIsAdding(true);
+    };
+
+    const handleSave = () => {
+        if (isAdding) {
+            onAdd(formData);
+            setIsAdding(false);
+        } else {
+            onUpdate(editingItem, formData);
+            setEditingItem(null);
+        }
+    };
+
+    const handleDelete = (id) => {
+        if (confirm('Supprimer ce comparateur ?')) {
+            onDelete(id);
+        }
+    };
+
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">Comparateurs de prix</h1>
-                <p className="text-gray-500">{comparators.length} comparateurs surveillés</p>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Comparateurs de prix</h1>
+                    <p className="text-gray-500">{data.length} comparateurs surveillés</p>
+                </div>
+                <div className="flex space-x-2">
+                    <button onClick={onReset} className="px-3 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-sm">
+                        <i className="fas fa-undo mr-1"></i>Reset
+                    </button>
+                    <button onClick={openAdd} className="px-4 py-2 bg-accent-green rounded-lg hover:bg-green-600">
+                        <i className="fas fa-plus mr-2"></i>Ajouter
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                {comparators.map(comp => (
-                    <div key={comp.id} className="glass rounded-xl border border-dark-600 p-5">
+                {data.map(comp => (
+                    <div key={comp.id} className="glass rounded-xl border border-dark-600 p-5 group">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center space-x-3">
                                 <span className="text-3xl">{comp.logo}</span>
@@ -626,13 +758,21 @@ function ComparatorsPage() {
                                     <a href={`https://${comp.domain}`} target="_blank" className="text-sm text-accent-blue hover:underline">{comp.domain}</a>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                comp.threat === 'high' ? 'bg-red-500/20 text-red-400' :
-                                comp.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
-                            }`}>
-                                Menace {comp.threat === 'high' ? 'haute' : comp.threat === 'medium' ? 'moyenne' : 'faible'}
-                            </span>
+                            <div className="flex items-center space-x-2">
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    comp.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                    comp.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-green-500/20 text-green-400'
+                                }`}>
+                                    {comp.threat === 'high' ? '🔴' : comp.threat === 'medium' ? '🟡' : '🟢'}
+                                </span>
+                                <button onClick={() => openEdit(comp)} className="opacity-0 group-hover:opacity-100 p-2 bg-dark-700 rounded-lg hover:bg-dark-600 transition">
+                                    <i className="fas fa-edit text-sm text-gray-400"></i>
+                                </button>
+                                <button onClick={() => handleDelete(comp.id)} className="opacity-0 group-hover:opacity-100 p-2 bg-dark-700 rounded-lg hover:bg-red-500/20 transition">
+                                    <i className="fas fa-trash text-sm text-red-400"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -655,15 +795,67 @@ function ComparatorsPage() {
                     </div>
                 ))}
             </div>
+
+            {/* Edit/Add Modal */}
+            <EditModal
+                isOpen={editingItem !== null || isAdding}
+                onClose={() => { setEditingItem(null); setIsAdding(false); }}
+                title={isAdding ? 'Ajouter un comparateur' : 'Modifier le comparateur'}
+                onSave={handleSave}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Nom</label>
+                            <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Logo (emoji)</label>
+                            <input type="text" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">Domaine</label>
+                        <input type="text" value={formData.domain || ''} onChange={e => setFormData({...formData, domain: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" placeholder="example.com" />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">URL Sitemap</label>
+                        <input type="text" value={formData.sitemapUrl || ''} onChange={e => setFormData({...formData, sitemapUrl: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" placeholder="https://..." />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">Niveau de menace</label>
+                        <select value={formData.threat || 'medium'} onChange={e => setFormData({...formData, threat: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none">
+                            <option value="low">Faible</option>
+                            <option value="medium">Moyenne</option>
+                            <option value="high">Haute</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">Notes</label>
+                        <textarea value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" rows="3"></textarea>
+                    </div>
+                </div>
+            </EditModal>
         </div>
     );
 }
 
-function MerchantsPage() {
+function MerchantsPage({ data = merchants, onUpdate, onAdd, onDelete, onReset }) {
     const [sortBy, setSortBy] = useState('reliability');
     const [sortDir, setSortDir] = useState('desc');
+    const [editingItem, setEditingItem] = useState(null);
+    const [isAdding, setIsAdding] = useState(false);
+    const [formData, setFormData] = useState({});
 
-    const sortedMerchants = [...merchants].sort((a, b) => {
+    const emptyForm = { name: '', domain: '', logo: '🏪', reliability: 50, trustpilot: 4.0, inventory: 1000, lastPromo: '', premiumProgram: null, affiliateRate: '5%', paymentMethods: 5, foundedYear: 2020, threat: 'medium' };
+
+    const sortedMerchants = [...data].sort((a, b) => {
         const multiplier = sortDir === 'desc' ? -1 : 1;
         return (a[sortBy] - b[sortBy]) * multiplier;
     });
@@ -681,34 +873,78 @@ function MerchantsPage() {
         <i className={`fas fa-sort${sortBy === field ? (sortDir === 'desc' ? '-down' : '-up') : ''} ml-1 text-xs ${sortBy === field ? 'text-accent-blue' : 'text-gray-600'}`}></i>
     );
 
+    const openEdit = (item) => {
+        setFormData({ ...item });
+        setEditingItem(item.id);
+    };
+
+    const openAdd = () => {
+        setFormData({ ...emptyForm });
+        setIsAdding(true);
+    };
+
+    const handleSave = () => {
+        const parsedData = {
+            ...formData,
+            reliability: parseInt(formData.reliability) || 50,
+            trustpilot: parseFloat(formData.trustpilot) || 4.0,
+            inventory: parseInt(formData.inventory) || 1000,
+            paymentMethods: parseInt(formData.paymentMethods) || 5,
+            foundedYear: parseInt(formData.foundedYear) || 2020,
+        };
+        if (isAdding) {
+            onAdd(parsedData);
+            setIsAdding(false);
+        } else {
+            onUpdate(editingItem, parsedData);
+            setEditingItem(null);
+        }
+    };
+
+    const handleDelete = (id) => {
+        if (confirm('Supprimer ce marchand ?')) {
+            onDelete(id);
+        }
+    };
+
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">Marchands de clés</h1>
-                <p className="text-gray-500">{merchants.length} marchands surveillés</p>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Marchands de clés</h1>
+                    <p className="text-gray-500">{data.length} marchands surveillés</p>
+                </div>
+                <div className="flex space-x-2">
+                    <button onClick={onReset} className="px-3 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-sm">
+                        <i className="fas fa-undo mr-1"></i>Reset
+                    </button>
+                    <button onClick={openAdd} className="px-4 py-2 bg-accent-green rounded-lg hover:bg-green-600">
+                        <i className="fas fa-plus mr-2"></i>Ajouter
+                    </button>
+                </div>
             </div>
 
             {/* Stats summary */}
             <div className="grid grid-cols-5 gap-4 mb-6">
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Catalogue total</div>
-                    <div className="text-2xl font-bold">{(merchants.reduce((s,m)=>s+m.inventory,0)/1000).toFixed(0)}K</div>
+                    <div className="text-2xl font-bold">{(data.reduce((s,m)=>s+m.inventory,0)/1000).toFixed(0)}K</div>
                 </div>
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Trustpilot moy.</div>
-                    <div className="text-2xl font-bold text-yellow-400">{(merchants.reduce((s,m)=>s+m.trustpilot,0)/merchants.length).toFixed(1)}★</div>
+                    <div className="text-2xl font-bold text-yellow-400">{(data.reduce((s,m)=>s+m.trustpilot,0)/data.length).toFixed(1)}★</div>
                 </div>
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Avec Premium</div>
-                    <div className="text-2xl font-bold">{merchants.filter(m => m.premiumProgram).length}/{merchants.length}</div>
+                    <div className="text-2xl font-bold">{data.filter(m => m.premiumProgram).length}/{data.length}</div>
                 </div>
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Affiliation moy.</div>
-                    <div className="text-2xl font-bold text-green-400">{(merchants.reduce((s,m)=>s+parseFloat(m.affiliateRate),0)/merchants.length).toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-green-400">{(data.reduce((s,m)=>s+parseFloat(m.affiliateRate),0)/data.length).toFixed(1)}%</div>
                 </div>
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <div className="text-sm text-gray-500 mb-1">Menaces hautes</div>
-                    <div className="text-2xl font-bold text-red-400">{merchants.filter(m=>m.threat==='high').length}</div>
+                    <div className="text-2xl font-bold text-red-400">{data.filter(m=>m.threat==='high').length}</div>
                 </div>
             </div>
 
@@ -723,12 +959,12 @@ function MerchantsPage() {
                             <th className="text-right px-4 py-3 text-sm font-semibold cursor-pointer hover:text-accent-blue" onClick={() => handleSort('inventory')}>Catalogue<SortIcon field="inventory" /></th>
                             <th className="text-center px-4 py-3 text-sm font-semibold">Affiliation</th>
                             <th className="text-left px-4 py-3 text-sm font-semibold">Promo active</th>
-                            <th className="text-center px-4 py-3 text-sm font-semibold">Menace</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-600">
                         {sortedMerchants.map(m => (
-                            <tr key={m.id} className="hover:bg-dark-700/50">
+                            <tr key={m.id} className="hover:bg-dark-700/50 group">
                                 <td className="px-4 py-3">
                                     <div className="flex items-center space-x-3">
                                         <span className="text-xl">{m.logo}</span>
@@ -763,11 +999,19 @@ function MerchantsPage() {
                                     <span className="text-sm text-yellow-400"><i className="fas fa-tag mr-1"></i>{m.lastPromo}</span>
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className={`px-2 py-1 rounded text-xs ${
-                                        m.threat === 'high' ? 'bg-red-500/20 text-red-400' :
-                                        m.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-green-500/20 text-green-400'
-                                    }`}>{m.threat}</span>
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <span className={`px-2 py-1 rounded text-xs ${
+                                            m.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                            m.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            'bg-green-500/20 text-green-400'
+                                        }`}>{m.threat === 'high' ? '🔴' : m.threat === 'medium' ? '🟡' : '🟢'}</span>
+                                        <button onClick={() => openEdit(m)} className="opacity-0 group-hover:opacity-100 p-1.5 bg-dark-600 rounded hover:bg-dark-500 transition">
+                                            <i className="fas fa-edit text-xs text-gray-400"></i>
+                                        </button>
+                                        <button onClick={() => handleDelete(m.id)} className="opacity-0 group-hover:opacity-100 p-1.5 bg-dark-600 rounded hover:bg-red-500/20 transition">
+                                            <i className="fas fa-trash text-xs text-red-400"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -787,11 +1031,89 @@ function MerchantsPage() {
                     <div><strong>Menace</strong> : Niveau de concurrence</div>
                 </div>
             </div>
+
+            {/* Edit/Add Modal */}
+            <EditModal
+                isOpen={editingItem !== null || isAdding}
+                onClose={() => { setEditingItem(null); setIsAdding(false); }}
+                title={isAdding ? 'Ajouter un marchand' : 'Modifier le marchand'}
+                onSave={handleSave}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Nom</label>
+                            <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Logo (emoji)</label>
+                            <input type="text" value={formData.logo || ''} onChange={e => setFormData({...formData, logo: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">Domaine</label>
+                        <input type="text" value={formData.domain || ''} onChange={e => setFormData({...formData, domain: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" placeholder="example.com" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Fiabilité TPA (%)</label>
+                            <input type="number" min="0" max="100" value={formData.reliability || 50} onChange={e => setFormData({...formData, reliability: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Trustpilot</label>
+                            <input type="number" step="0.1" min="0" max="5" value={formData.trustpilot || 4.0} onChange={e => setFormData({...formData, trustpilot: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Catalogue</label>
+                            <input type="number" value={formData.inventory || 1000} onChange={e => setFormData({...formData, inventory: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Affiliation</label>
+                            <input type="text" value={formData.affiliateRate || '5%'} onChange={e => setFormData({...formData, affiliateRate: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Programme Premium</label>
+                            <input type="text" value={formData.premiumProgram || ''} onChange={e => setFormData({...formData, premiumProgram: e.target.value || null})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" placeholder="null ou prix/mois" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-1">Promo active</label>
+                        <input type="text" value={formData.lastPromo || ''} onChange={e => setFormData({...formData, lastPromo: e.target.value})}
+                            className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Année de création</label>
+                            <input type="number" value={formData.foundedYear || 2020} onChange={e => setFormData({...formData, foundedYear: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Niveau de menace</label>
+                            <select value={formData.threat || 'medium'} onChange={e => setFormData({...formData, threat: e.target.value})}
+                                className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg focus:border-accent-blue outline-none">
+                                <option value="low">Faible</option>
+                                <option value="medium">Moyenne</option>
+                                <option value="high">Haute</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </EditModal>
         </div>
     );
 }
 
-function SitemapChecker() {
+function SitemapChecker({ comparatorsData = comparators }) {
     const [scanning, setScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState({ current: 0, total: 0, site: '' });
     const [sitemapData, setSitemapData] = useState(() => {
@@ -831,14 +1153,14 @@ function SitemapChecker() {
     // Scanner tous les comparateurs
     const runFullScan = async () => {
         setScanning(true);
-        setScanProgress({ current: 0, total: comparators.length, site: '' });
+        setScanProgress({ current: 0, total: comparatorsData.length, site: '' });
 
         const now = new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const newData = { ...sitemapData };
 
-        for (let i = 0; i < comparators.length; i++) {
-            const comp = comparators[i];
-            setScanProgress({ current: i + 1, total: comparators.length, site: comp.name });
+        for (let i = 0; i < comparatorsData.length; i++) {
+            const comp = comparatorsData[i];
+            setScanProgress({ current: i + 1, total: comparatorsData.length, site: comp.name });
 
             const result = await scanSite(comp.sitemapUrl);
 
@@ -898,7 +1220,7 @@ function SitemapChecker() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-600">
-                        {comparators.map(c => {
+                        {comparatorsData.map(c => {
                             const data = sitemapData[c.name];
                             const hasData = data && data.count > 0;
                             const hasError = data && data.error;
