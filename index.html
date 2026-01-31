@@ -1391,11 +1391,11 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
             if (!offersRes.ok || !checksRes.ok) throw new Error('Erreur chargement');
             const [offersData, checksData] = await Promise.all([offersRes.json(), checksRes.json()]);
 
-            // Associer les checks aux offers
+            // Associer les checks aux offers (conversion en Number pour éviter mismatch string/number)
             const offersWithHistory = offersData.map(offer => ({
                 ...offer,
-                history: checksData.filter(c => c.offer_id === offer.id),
-                lastCheck: checksData.find(c => c.offer_id === offer.id)
+                history: checksData.filter(c => Number(c.offer_id) === Number(offer.id)),
+                lastCheck: checksData.find(c => Number(c.offer_id) === Number(offer.id))
             }));
             setOffers(offersWithHistory);
 
