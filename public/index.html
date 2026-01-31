@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- BUILD_VERSION: 2026-01-31-v2 - Number fix included -->
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -139,6 +140,14 @@ function isDemoMode() {
     return localStorage.getItem('ci_demo_mode') === 'true';
 }
 
+// Check if a comparator is being tracked (enabled in settings)
+function isComparatorTracked(compName) {
+    const saved = localStorage.getItem('ci_comparator_tracking');
+    if (!saved) return true; // Default: all enabled
+    const tracking = JSON.parse(saved);
+    return tracking[compName] !== false;
+}
+
 // Sample demo data for News Checker
 const demoNews = [
     { id: 'demo-1', source: 'GG.deals', logo: '🟢', title: '[DEMO] Steam Winter Sale 2026 - Meilleures offres', url: 'https://gg.deals/news/', description: 'Les meilleures réductions de la vente d\'hiver Steam', category: 'sale', publishedAt: new Date().toISOString() },
@@ -248,15 +257,21 @@ const gamePrices = {
     ],
 };
 
-const sitemapHistory = [
-    { date: '30 Jan', allkeyshop: 847523, ggdeals: 623847, itad: 234156, dlcompare: 312456 },
-    { date: '29 Jan', allkeyshop: 847289, ggdeals: 623435, itad: 234067, dlcompare: 312389 },
-    { date: '28 Jan', allkeyshop: 846892, ggdeals: 622980, itad: 233945, dlcompare: 312234 },
-    { date: '27 Jan', allkeyshop: 846234, ggdeals: 622456, itad: 233812, dlcompare: 312156 },
-    { date: '26 Jan', allkeyshop: 845678, ggdeals: 621890, itad: 233698, dlcompare: 312078 },
-    { date: '25 Jan', allkeyshop: 845123, ggdeals: 621234, itad: 233589, dlcompare: 311967 },
-    { date: '24 Jan', allkeyshop: 844567, ggdeals: 620678, itad: 233478, dlcompare: 311856 },
-];
+// Generate dynamic sitemap history based on comparators
+function generateSitemapHistory() {
+    const days = ['30 Jan', '29 Jan', '28 Jan', '27 Jan', '26 Jan', '25 Jan', '24 Jan'];
+    return days.map((date, dayIndex) => {
+        const row = { date };
+        comparators.forEach(comp => {
+            // Use comparator's pagesIndexed as base, decrease slightly for older days
+            const basePages = comp.pagesIndexed || 100000;
+            const variance = Math.floor(basePages * 0.001 * dayIndex); // ~0.1% decrease per day
+            row[comp.name.toLowerCase().replace(/[^a-z0-9]/g, '')] = basePages - variance;
+        });
+        return row;
+    });
+}
+const sitemapHistory = generateSitemapHistory();
 
 // ===== STATUS CHECKER DATA (REAL URLs) =====
 const serviceStatus = {
@@ -707,20 +722,19 @@ function Dashboard({ setCurrentPage, visibleAlerts = [], comparatorsData = compa
                         <thead>
                             <tr className="text-gray-500 border-b border-dark-600">
                                 <th className="text-left py-2 font-medium">Date</th>
-                                <th className="text-right font-medium">🔵 AllKeyShop</th>
-                                <th className="text-right font-medium">🟢 GG.deals</th>
-                                <th className="text-right font-medium">🟡 ITAD</th>
-                                <th className="text-right font-medium">🔴 DLCompare</th>
+                                {comparators.map(comp => (
+                                    <th key={comp.id} className="text-right font-medium">{comp.logo} {comp.name}</th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
                             {sitemapHistory.map((row, i) => (
                                 <tr key={i} className="border-b border-dark-700/50">
                                     <td className="py-2 text-gray-400">{row.date}</td>
-                                    <td className="text-right font-mono">{row.allkeyshop.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.ggdeals.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.itad.toLocaleString()}</td>
-                                    <td className="text-right font-mono">{row.dlcompare.toLocaleString()}</td>
+                                    {comparators.map(comp => {
+                                        const key = comp.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        return <td key={comp.id} className="text-right font-mono">{(row[key] || 0).toLocaleString()}</td>;
+                                    })}
                                 </tr>
                             ))}
                         </tbody>
@@ -1378,12 +1392,15 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
             if (!offersRes.ok || !checksRes.ok) throw new Error('Erreur chargement');
             const [offersData, checksData] = await Promise.all([offersRes.json(), checksRes.json()]);
 
-            // Associer les checks aux offers
+            // Associer les checks aux offers (conversion en Number pour éviter mismatch string/number)
+            // DEPLOY_CHECK_V3: Ce code doit s'afficher si le déploiement est à jour
+            console.log('🚀 DEPLOY_CHECK_V3: Number() fix is active!', { offersCount: offersData.length, checksCount: checksData.length });
             const offersWithHistory = offersData.map(offer => ({
                 ...offer,
-                history: checksData.filter(c => c.offer_id === offer.id),
-                lastCheck: checksData.find(c => c.offer_id === offer.id)
+                history: checksData.filter(c => Number(c.offer_id) === Number(offer.id)),
+                lastCheck: checksData.find(c => Number(c.offer_id) === Number(offer.id))
             }));
+            console.log('🔗 Offers with history:', offersWithHistory.map(o => ({ id: o.id, name: o.game_name, hasLastCheck: !!o.lastCheck })));
             setOffers(offersWithHistory);
 
             // Sélectionner le premier jeu si aucun sélectionné
@@ -1408,9 +1425,14 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
 
     // Calculer les stats de précision par source (comparateur/marchand)
     const calculatePrecision = (offer) => {
-        if (!offer.displayed_price || !offer.lastCheck?.checkout_price) return null;
-        const diff = offer.lastCheck.checkout_price - offer.displayed_price;
-        const pct = (diff / offer.displayed_price * 100);
+        // Prix affiché: depuis l'offre OU depuis le dernier relevé (reference_price)
+        const displayedPrice = offer.displayed_price || offer.lastCheck?.reference_price;
+        // Prix checkout: prix PayPal ou Carte depuis price_checks (checkout_price pour démo)
+        const checkoutPrice = offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price;
+
+        if (!displayedPrice || !checkoutPrice) return null;
+        const diff = checkoutPrice - displayedPrice;
+        const pct = (diff / displayedPrice * 100);
         return { diff, pct, isAccurate: Math.abs(pct) < 2 };
     };
 
@@ -1523,10 +1545,10 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
                                                         <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-mono">
-                                                        {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                                        {(offer.displayed_price || offer.lastCheck?.reference_price) ? `${(offer.displayed_price || offer.lastCheck?.reference_price).toFixed(2)}€` : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-mono">
-                                                        {offer.lastCheck?.checkout_price ? `${offer.lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                                        {(offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price) ? `${(offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price).toFixed(2)}€` : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
                                                         {precision ? (
@@ -1592,7 +1614,7 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
 function StatusChecker() {
     const [scanning, setScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
-    const [expandedSites, setExpandedSites] = useState(['AllKeyShop', 'GG.deals', 'DLCompare']);
+    const [expandedSites, setExpandedSites] = useState(Object.keys(serviceStatus));
     const [statusData, setStatusData] = useState(serviceStatus);
 
     const toggleSite = (site) => {
@@ -2665,7 +2687,7 @@ function NewsChecker() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold">News Checker</h1>
-                    <p className="text-gray-500">Veille éditoriale AllKeyShop & GG.deals</p>
+                    <p className="text-gray-500">Veille éditoriale des comparateurs de prix</p>
                 </div>
             </div>
 
@@ -2693,49 +2715,52 @@ function NewsChecker() {
                 </div>
             </div>
 
-            {/* Source comparison */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🔵 AllKeyShop</span>
-                        <span className={`text-sm ${aksNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{aksNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{aksNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{aksArticlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{aksNews.filter(n=>n.category==='comparison').length}</div><div className="text-gray-500">Comparatifs</div></div>
-                    </div>
-                </div>
-                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🟢 GG.deals</span>
-                        <span className={`text-sm ${ggdealsNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{ggdealsNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{ggdealsNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{ggArticlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{ggdealsNews.filter(n=>n.category==='sale').length}</div><div className="text-gray-500">Sales</div></div>
-                    </div>
-                </div>
-                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold">🟡 IsThereAnyDeal</span>
-                        <span className={`text-sm ${itadNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{itadNews.length > 0 ? 'Actif' : 'Inactif'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                        <div><div className="text-lg font-bold">{itadNews.length}</div><div className="text-gray-500">Articles</div></div>
-                        <div><div className="text-lg font-bold">{itadNews.length > 0 ? (itadNews.filter(n => (today - new Date(n.publishedAt)) / (1000*60*60*24) < 7).length / 7).toFixed(1) : '0'}</div><div className="text-gray-500">Par jour</div></div>
-                        <div><div className="text-lg font-bold">{itadNews.filter(n=>n.category==='sale' || n.category==='free').length}</div><div className="text-gray-500">Deals</div></div>
-                    </div>
-                </div>
+            {/* Source comparison - Dynamic based on available sources */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {(() => {
+                    // Get unique sources from newsFeeds
+                    const sources = [...new Set(newsFeeds.map(n => n.source))];
+                    const sourceConfig = {
+                        'GG.deals': { logo: '🟢', color: 'green', mainCat: 'sale' },
+                        'AllKeyShop': { logo: '🔵', color: 'blue', mainCat: 'comparison' },
+                        'IsThereAnyDeal': { logo: '🟡', color: 'yellow', mainCat: 'sale' }
+                    };
+                    // Include all configured sources even if they have no data
+                    const allSources = [...new Set([...Object.keys(sourceConfig), ...sources])];
+
+                    return allSources.map(src => {
+                        const config = sourceConfig[src] || { logo: '⚪', color: 'gray', mainCat: 'news' };
+                        const srcNews = newsFeeds.filter(n => n.source === src);
+                        const weekSrcNews = srcNews.filter(n => (today - new Date(n.publishedAt)) / (1000*60*60*24) < 7);
+                        const articlesPerDay = srcNews.length > 0 ? (weekSrcNews.length / 7).toFixed(1) : '0';
+                        const mainCatCount = srcNews.filter(n => n.category === config.mainCat).length;
+
+                        return (
+                            <div key={src} className={`glass rounded-xl border border-${config.color}-500/30 p-4 bg-${config.color}-500/5`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="font-semibold">{config.logo} {src}</span>
+                                    <span className={`text-sm ${srcNews.length > 0 ? 'text-green-400' : 'text-red-400'}`}>{srcNews.length > 0 ? 'Actif' : 'Inactif'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                                    <div><div className="text-lg font-bold">{srcNews.length}</div><div className="text-gray-500">Articles</div></div>
+                                    <div><div className="text-lg font-bold">{articlesPerDay}</div><div className="text-gray-500">Par jour</div></div>
+                                    <div><div className="text-lg font-bold">{mainCatCount}</div><div className="text-gray-500">{config.mainCat === 'sale' ? 'Sales' : config.mainCat === 'comparison' ? 'Comparatifs' : 'News'}</div></div>
+                                </div>
+                            </div>
+                        );
+                    });
+                })()}
             </div>
 
-            {/* Filters */}
+            {/* Filters - Dynamic sources based on actual data */}
             <div className="flex space-x-4 mb-4">
-                <div className="flex space-x-2">
-                    {['all', 'GG.deals', 'AllKeyShop'].map(src => (
+                <div className="flex space-x-2 flex-wrap gap-2">
+                    <button onClick={() => setSourceFilter('all')} className={`px-3 py-1 rounded-lg text-sm ${sourceFilter === 'all' ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>
+                        Toutes sources
+                    </button>
+                    {[...new Set(newsFeeds.map(n => n.source))].map(src => (
                         <button key={src} onClick={() => setSourceFilter(src)} className={`px-3 py-1 rounded-lg text-sm ${sourceFilter === src ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>
-                            {src === 'all' ? 'Toutes sources' : src}
+                            {src}
                         </button>
                     ))}
                 </div>
@@ -2928,6 +2953,70 @@ function FeatureChecker() {
     );
 }
 
+// Composant pour activer/désactiver le suivi des comparateurs
+function ComparatorTrackingSettings() {
+    // État pour chaque comparateur (dynamique basé sur la liste des comparateurs)
+    const [trackingState, setTrackingState] = useState(() => {
+        const saved = localStorage.getItem('ci_comparator_tracking');
+        if (saved) return JSON.parse(saved);
+        // Par défaut, tous les comparateurs sont activés
+        const defaultState = {};
+        comparators.forEach(c => { defaultState[c.name] = true; });
+        return defaultState;
+    });
+
+    const toggleTracking = (compName) => {
+        const newState = { ...trackingState, [compName]: !trackingState[compName] };
+        setTrackingState(newState);
+        localStorage.setItem('ci_comparator_tracking', JSON.stringify(newState));
+    };
+
+    // Couleurs par comparateur
+    const getColor = (name) => {
+        const colors = {
+            'AllKeyShop': 'blue',
+            'GG.deals': 'green',
+            'IsThereAnyDeal': 'yellow',
+            'DLCompare': 'red',
+            'CheapShark': 'purple'
+        };
+        return colors[name] || 'gray';
+    };
+
+    return (
+        <div className="glass rounded-xl border border-dark-600 p-4">
+            <h2 className="font-semibold mb-4"><i className="fas fa-eye mr-2"></i>Suivi des comparateurs</h2>
+            <p className="text-sm text-gray-400 mb-4">Activez ou désactivez le suivi pour chaque comparateur</p>
+            <div className="space-y-3">
+                {comparators.map(comp => {
+                    const color = getColor(comp.name);
+                    const isEnabled = trackingState[comp.name] !== false;
+                    return (
+                        <div key={comp.id} className={`flex items-center justify-between p-3 rounded-lg bg-dark-700 border ${isEnabled ? `border-${color}-500/30` : 'border-dark-600 opacity-50'}`}>
+                            <div className="flex items-center space-x-3">
+                                <span className="text-xl">{comp.logo}</span>
+                                <div>
+                                    <div className="font-medium">{comp.name}</div>
+                                    <div className="text-xs text-gray-500">{comp.domain}</div>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isEnabled}
+                                    onChange={() => toggleTracking(comp.name)}
+                                    className="sr-only peer"
+                                />
+                                <div className={`w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-${color}-500`}></div>
+                            </label>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function SettingsPage() {
     const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('ci_discord_webhook') || '');
     const [discordEnabled, setDiscordEnabled] = useState(() => localStorage.getItem('ci_discord_enabled') === 'true');
@@ -3075,6 +3164,9 @@ function SettingsPage() {
                     )}
                 </div>
 
+                {/* Suivi des comparateurs */}
+                <ComparatorTrackingSettings />
+
                 <div className="glass rounded-xl border border-dark-600 p-4">
                     <h2 className="font-semibold mb-4"><i className="fas fa-bell mr-2"></i>Notifications</h2>
                     <div className="space-y-3">
@@ -3221,3 +3313,4 @@ ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
+<!-- Cache bust: 1769868104 -->
