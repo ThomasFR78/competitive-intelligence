@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Tracker</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-content">
+        <h1>Price Tracker</h1>
+        <p class="subtitle">Compare price comparators accuracy vs real prices</p>
+      </div>
+      <div class="header-actions">
+        <a href="/api/export-csv" target="_blank" class="btn btn-secondary">
+          <span class="btn-icon">📥</span> Export CSV
+        </a>
+        <button class="btn btn-primary" onclick="openOfferModal()">
+          <span class="btn-icon">+</span> New Offer
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="offers-grid" id="offersGrid">
+      </div>
+    </main>
+  </div>
+
+  <!-- Offer Modal -->
+  <div class="modal" id="offerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="offerModalTitle">New Offer</h2>
+        <button class="modal-close" onclick="closeOfferModal()">&times;</button>
+      </div>
+      <form id="offerForm" onsubmit="saveOffer(event)">
+        <input type="hidden" id="offerId">
+        <div class="form-group">
+          <label for="offerUrl">Offer URL</label>
+          <input type="url" id="offerUrl" required placeholder="https://driffle.com/...">
+        </div>
+        <div class="form-group">
+          <label for="offerName">Product Name</label>
+          <input type="text" id="offerName" required placeholder="Clair Obscur: Expedition 33">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offerStore">Store</label>
+            <input type="text" id="offerStore" placeholder="Driffle">
+          </div>
+          <div class="form-group">
+            <label for="offerRegion">Region</label>
+            <select id="offerRegion">
+              <option value="global">Global</option>
+              <option value="europe">Europe</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Payment Method</label>
+          <div class="radio-group">
+            <label class="radio-pill">
+              <input type="radio" name="offerPaymentMethod" value="card" checked> 💳 Card
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="offerPaymentMethod" value="paypal"> 🅿️ PayPal
+            </label>
+          </div>
+        </div>
+
+        <!-- Displayed price on merchant site -->
+        <div class="price-section highlighted">
+          <h3>Merchant Displayed Price</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="displayedPrice">Displayed Price (€)</label>
+              <input type="number" step="0.01" id="displayedPrice" placeholder="0.00">
+            </div>
+            <div class="form-group screenshot-group">
+              <label>Screenshot</label>
+              <div class="screenshot-drop" id="dropDisplayed" tabindex="0">
+                <span class="drop-text">Ctrl+V to paste</span>
+                <img class="screenshot-preview" id="previewDisplayed">
+              </div>
+              <input type="hidden" id="screenshotDisplayed">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeOfferModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Price Check Modal -->
+  <div class="modal" id="checkModal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2>New Price Check</h2>
+        <button class="modal-close" onclick="closeCheckModal()">&times;</button>
+      </div>
+      <form id="checkForm" onsubmit="saveCheck(event)">
+        <input type="hidden" id="checkOfferId">
+
+        <div class="check-layout">
+          <!-- Left column: Real checkout prices -->
+          <div class="check-column">
+            <h3 class="column-title">Real Checkout Prices</h3>
+            <p class="column-subtitle">Actual final price with all fees</p>
+
+            <div class="price-box">
+              <div class="price-box-header">PayPal</div>
+              <div class="form-group">
+                <input type="number" step="0.01" id="pricePaypal" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <div class="screenshot-drop" id="dropPaypal" tabindex="0">
+                  <span class="drop-text">Ctrl+V</span>
+                  <img class="screenshot-preview" id="previewPaypal">
+                </div>
+                <input type="hidden" id="screenshotPaypal">
+              </div>
+            </div>
+
+            <div class="price-box">
+              <div class="price-box-header">Credit Card</div>
+              <div class="form-group">
+                <input type="number" step="0.01" id="priceCard" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <div class="screenshot-drop" id="dropCard" tabindex="0">
+                  <span class="drop-text">Ctrl+V</span>
+                  <img class="screenshot-preview" id="previewCard">
+                </div>
+                <input type="hidden" id="screenshotCard">
+              </div>
+            </div>
+          </div>
+
+          <!-- Right column: Comparator prices -->
+          <div class="check-column">
+            <h3 class="column-title">Comparator Displayed Prices</h3>
+            <p class="column-subtitle">What GGDeals and AllKeyShop show</p>
+
+            <div class="price-box comparator">
+              <div class="price-box-header">GGDeals</div>
+              <div class="form-group">
+                <input type="number" step="0.01" id="priceGgdeals" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <input type="text" id="couponGgdeals" placeholder="Code (e.g. GGD5)"
+                  style="font-size: 0.8rem; padding: 0.5rem;">
+              </div>
+              <div class="form-group">
+                <div class="screenshot-drop" id="dropGgdeals" tabindex="0">
+                  <span class="drop-text">Ctrl+V</span>
+                  <img class="screenshot-preview" id="previewGgdeals">
+                </div>
+                <input type="hidden" id="screenshotGgdeals">
+              </div>
+            </div>
+
+            <div class="price-box comparator">
+              <div class="price-box-header">AllKeyShop</div>
+              <div class="form-group">
+                <input type="number" step="0.01" id="priceAllkeyshop" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <input type="text" id="couponAllkeyshop" placeholder="Code (e.g. AKS8)"
+                  style="font-size: 0.8rem; padding: 0.5rem;">
+              </div>
+              <div class="form-group">
+                <div class="screenshot-drop" id="dropAllkeyshop" tabindex="0">
+                  <span class="drop-text">Ctrl+V</span>
+                  <img class="screenshot-preview" id="previewAllkeyshop">
+                </div>
+                <input type="hidden" id="screenshotAllkeyshop">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="checkNotes">Notes</label>
+          <textarea id="checkNotes" rows="2" placeholder="Optional remarks..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCheckModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Check</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal" id="historyModal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="historyTitle">Price History</h2>
+        <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div class="history-content" id="historyContent">
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

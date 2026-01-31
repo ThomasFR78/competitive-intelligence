@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment variables (keep secrets safe)
+.env
+
+# Database files
+*.db
+price_tracker.db
+
+# Tool config
+.claude/
+.vscode/
+
+# User uploads
+uploads/

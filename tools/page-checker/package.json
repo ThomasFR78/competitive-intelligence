@@ -1,0 +1,13 @@
+{
+  "name": "price-tracker",
+  "version": "1.0.0",
+  "description": "Application de suivi des prix d'offres de cles de jeux",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.91.1"
+  }
+}

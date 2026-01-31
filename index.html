@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI War Room - Veille Concurrentielle Gaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0f0f1a', 800: '#1a1a2e', 700: '#252540', 600: '#2d2d4a' },
+                        accent: { blue: '#3b82f6', green: '#10b981', red: '#ef4444', yellow: '#f59e0b', purple: '#8b5cf6' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f0f1a; }
+        .glass { background: rgba(26, 26, 46, 0.8); backdrop-filter: blur(10px); }
+        .status-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect } = React;
+
+// ===== VRAIS CONCURRENTS =====
+const comparators = [
+    {
+        id: 1,
+        name: 'AllKeyShop',
+        domain: 'allkeyshop.com',
+        logo: '🔵',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.allkeyshop.com/blog/sitemap_index.xml',
+        lastCheck: '30 Jan 2026, 16:45',
+        pagesIndexed: 847523,
+        newPages24h: 234,
+        avgPrice: 32.50,
+        marketShare: '35%',
+        threat: 'high',
+        notes: 'Leader historique, très agressif sur le SEO, cashback system'
+    },
+    {
+        id: 2,
+        name: 'GG.deals',
+        domain: 'gg.deals',
+        logo: '🟢',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://gg.deals/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:42',
+        pagesIndexed: 623847,
+        newPages24h: 412,
+        avgPrice: 31.20,
+        marketShare: '28%',
+        threat: 'high',
+        notes: 'Croissance rapide, UI moderne, système alertes prix, API'
+    },
+    {
+        id: 3,
+        name: 'IsThereAnyDeal',
+        domain: 'isthereanydeal.com',
+        logo: '🟡',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://isthereanydeal.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:40',
+        pagesIndexed: 234156,
+        newPages24h: 89,
+        avgPrice: 28.90,
+        marketShare: '15%',
+        threat: 'medium',
+        notes: 'Focus stores officiels, intégration Steam, wishlist sync'
+    },
+    {
+        id: 4,
+        name: 'CheapShark',
+        domain: 'cheapshark.com',
+        logo: '🦈',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.cheapshark.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:38',
+        pagesIndexed: 156234,
+        newPages24h: 45,
+        avgPrice: 24.50,
+        marketShare: '8%',
+        threat: 'low',
+        notes: 'API publique très utilisée, communauté dev, US-focused'
+    },
+    {
+        id: 5,
+        name: 'DLCompare',
+        domain: 'dlcompare.com',
+        logo: '🔴',
+        type: 'comparator',
+        status: 'active',
+        sitemapUrl: 'https://www.dlcompare.com/sitemap.xml',
+        lastCheck: '30 Jan 2026, 16:35',
+        pagesIndexed: 312456,
+        newPages24h: 67,
+        avgPrice: 33.10,
+        marketShare: '10%',
+        threat: 'medium',
+        notes: 'Fort en France/Europe, multilingue, bon SEO local'
+    },
+];
+
+const merchants = [
+    { id: 1, name: 'CDKeys', domain: 'cdkeys.com', logo: '🔑', status: 'active', avgPrice: 34.20, reliability: 94, lastPromo: 'WINTER25 -25%', threat: 'medium', inventory: 12453 },
+    { id: 2, name: 'Instant Gaming', domain: 'instant-gaming.com', logo: '⚡', status: 'active', avgPrice: 32.80, reliability: 87, lastPromo: '10% cashback new users', threat: 'high', inventory: 18234 },
+    { id: 3, name: 'G2A', domain: 'g2a.com', logo: '🏪', status: 'active', avgPrice: 29.50, reliability: 58, lastPromo: 'G2A Plus -10%', threat: 'high', inventory: 45678 },
+    { id: 4, name: 'Kinguin', domain: 'kinguin.net', logo: '👑', status: 'active', avgPrice: 31.20, reliability: 42, lastPromo: 'Flash Sale -40%', threat: 'medium', inventory: 23456 },
+    { id: 5, name: 'Eneba', domain: 'eneba.com', logo: '🛒', status: 'active', avgPrice: 30.10, reliability: 71, lastPromo: 'ENEBA5 -5%', threat: 'high', inventory: 34567 },
+    { id: 6, name: 'Fanatical', domain: 'fanatical.com', logo: '🎯', status: 'active', avgPrice: 35.90, reliability: 89, lastPromo: 'Build your bundle', threat: 'low', inventory: 8765 },
+    { id: 7, name: 'Gamesplanet', domain: 'gamesplanet.com', logo: '🌍', status: 'active', avgPrice: 36.50, reliability: 91, lastPromo: 'Weekend deals', threat: 'low', inventory: 6543 },
+    { id: 8, name: 'HRK Game', domain: 'hrkgame.com', logo: '🎮', status: 'active', avgPrice: 28.90, reliability: 65, lastPromo: 'New user -15%', threat: 'low', inventory: 9876 },
+    { id: 9, name: 'Gamivo', domain: 'gamivo.com', logo: '🎪', status: 'active', avgPrice: 27.80, reliability: 68, lastPromo: 'Smart price', threat: 'medium', inventory: 19876 },
+    { id: 10, name: 'Green Man Gaming', domain: 'greenmangaming.com', logo: '🟩', status: 'active', avgPrice: 38.50, reliability: 95, lastPromo: 'VIP -22%', threat: 'low', inventory: 4567 },
+];
+
+// Alertes récentes réalistes
+const recentAlerts = [
+    { id: 1, type: 'price_drop', competitor: 'GG.deals', message: 'GTA VI Pre-order listé à 54.99€ chez Instant Gaming (vs 59.99€ Steam)', severity: 'high', time: '12 min', game: 'GTA VI', url: 'https://gg.deals/game/gta-vi/' },
+    { id: 2, type: 'new_feature', competitor: 'AllKeyShop', message: 'Nouvelle section "Verified Sellers" avec badge de confiance', severity: 'high', time: '1h', game: null },
+    { id: 3, type: 'sitemap', competitor: 'Instant Gaming', message: '+1,247 nouvelles URLs détectées (probablement winter sale)', severity: 'medium', time: '2h', game: null },
+    { id: 4, type: 'promo', competitor: 'CDKeys', message: 'Code WINTER25 actif: -25% sur toute la sélection', severity: 'medium', time: '3h', game: null },
+    { id: 5, type: 'price_drop', competitor: 'Eneba', message: 'EA FC 25 à 41.99€ - meilleur prix actuel du marché', severity: 'high', time: '4h', game: 'EA FC 25', url: 'https://eneba.com/ea-fc-25' },
+    { id: 6, type: 'seo', competitor: 'IsThereAnyDeal', message: 'Passé en position 3 sur "cheap steam keys" (Google FR)', severity: 'medium', time: '6h', game: null },
+    { id: 7, type: 'new_page', competitor: 'DLCompare', message: 'Page "Monster Hunter Wilds" créée 2 mois avant sortie', severity: 'low', time: '8h', game: 'Monster Hunter Wilds' },
+    { id: 8, type: 'api_change', competitor: 'CheapShark', message: 'Nouvelle endpoint API v2 détectée /api/2.0/deals', severity: 'low', time: '1d', game: null },
+];
+
+// Données price checker
+const gamePrices = {
+    'GTA VI': [
+        { merchant: 'CDKeys', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 54.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 52.50, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Kinguin', price: 55.99, currency: 'EUR', inStock: false, region: 'EU' },
+        { merchant: 'Eneba', price: 53.20, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Fanatical', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Green Man Gaming', price: 59.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'EA FC 25': [
+        { merchant: 'CDKeys', price: 45.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 44.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 42.30, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Eneba', price: 41.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Gamivo', price: 43.50, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Elden Ring': [
+        { merchant: 'CDKeys', price: 35.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 34.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 32.80, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Fanatical', price: 37.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Green Man Gaming', price: 39.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Cyberpunk 2077': [
+        { merchant: 'CDKeys', price: 24.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 22.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'G2A', price: 21.50, currency: 'EUR', inStock: true, region: 'Global' },
+        { merchant: 'Eneba', price: 23.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Kinguin', price: 25.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+    'Hogwarts Legacy': [
+        { merchant: 'CDKeys', price: 32.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Instant Gaming', price: 31.50, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Fanatical', price: 34.99, currency: 'EUR', inStock: true, region: 'EU' },
+        { merchant: 'Gamesplanet', price: 35.99, currency: 'EUR', inStock: true, region: 'EU' },
+    ],
+};
+
+const sitemapHistory = [
+    { date: '30 Jan', allkeyshop: 847523, ggdeals: 623847, itad: 234156, dlcompare: 312456 },
+    { date: '29 Jan', allkeyshop: 847289, ggdeals: 623435, itad: 234067, dlcompare: 312389 },
+    { date: '28 Jan', allkeyshop: 846892, ggdeals: 622980, itad: 233945, dlcompare: 312234 },
+    { date: '27 Jan', allkeyshop: 846234, ggdeals: 622456, itad: 233812, dlcompare: 312156 },
+    { date: '26 Jan', allkeyshop: 845678, ggdeals: 621890, itad: 233698, dlcompare: 312078 },
+    { date: '25 Jan', allkeyshop: 845123, ggdeals: 621234, itad: 233589, dlcompare: 311967 },
+    { date: '24 Jan', allkeyshop: 844567, ggdeals: 620678, itad: 233478, dlcompare: 311856 },
+];
+
+// ===== STATUS CHECKER DATA (REAL URLs) =====
+const serviceStatus = {
+    'AllKeyShop': {
+        logo: '🔵',
+        domain: 'allkeyshop.com',
+        services: [
+            { name: 'Main Website', url: 'https://www.allkeyshop.com/blog/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Reward Program', url: 'https://www.allkeyshop.com/blog/reward-program/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Vouchers Page', url: 'https://www.allkeyshop.com/blog/vouchers/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games Catalog', url: 'https://www.allkeyshop.com/blog/games/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Gift Cards', url: 'https://www.allkeyshop.com/blog/catalogue/category-giftcards/', status: 'online', lastCheck: null, responseTime: null },
+        ],
+        merchantVouchers: [
+            { merchant: 'PremiumCDkeys', url: 'https://www.allkeyshop.com/blog/vouchers/premiumcdkeys/', status: 'pending', lastCheck: null },
+            { merchant: 'Keys4us', url: 'https://www.allkeyshop.com/blog/vouchers/keys4us/', status: 'pending', lastCheck: null },
+            { merchant: '2Game', url: 'https://www.allkeyshop.com/blog/vouchers/2game/', status: 'pending', lastCheck: null },
+            { merchant: 'Driffle', url: 'https://www.allkeyshop.com/blog/vouchers/driffle/', status: 'pending', lastCheck: null },
+            { merchant: 'Gamivo', url: 'https://www.allkeyshop.com/blog/vouchers/gamivo/', status: 'pending', lastCheck: null },
+            { merchant: 'K4G', url: 'https://www.allkeyshop.com/blog/vouchers/k4g/', status: 'pending', lastCheck: null },
+            { merchant: 'Eneba', url: 'https://www.allkeyshop.com/blog/vouchers/eneba/', status: 'pending', lastCheck: null },
+            { merchant: 'HRK', url: 'https://www.allkeyshop.com/blog/vouchers/hrk/', status: 'pending', lastCheck: null },
+            { merchant: 'Kinguin', url: 'https://www.allkeyshop.com/blog/vouchers/kinguin/', status: 'pending', lastCheck: null },
+            { merchant: 'GAMESEAL', url: 'https://www.allkeyshop.com/blog/vouchers/gameseal/', status: 'pending', lastCheck: null },
+            { merchant: 'BuyGames', url: 'https://www.allkeyshop.com/blog/vouchers/buygames/', status: 'pending', lastCheck: null },
+            { merchant: 'Bitcodes', url: 'https://www.allkeyshop.com/blog/vouchers/bitcodes/', status: 'pending', lastCheck: null },
+        ]
+    },
+    'GG.deals': {
+        logo: '🟢',
+        domain: 'gg.deals',
+        services: [
+            { name: 'Main Website', url: 'https://gg.deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals Page', url: 'https://gg.deals/deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games', url: 'https://gg.deals/games/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Vouchers', url: 'https://gg.deals/vouchers/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'News', url: 'https://gg.deals/news/', status: 'online', lastCheck: null, responseTime: null },
+        ],
+        merchantVouchers: [
+            { merchant: 'Kinguin', url: 'https://gg.deals/vouchers/kinguin/', status: 'pending', lastCheck: null },
+            { merchant: 'Driffle', url: 'https://gg.deals/vouchers/driffle/', status: 'pending', lastCheck: null },
+            { merchant: 'G2A', url: 'https://gg.deals/vouchers/g2a/', status: 'pending', lastCheck: null },
+            { merchant: 'GAMIVO', url: 'https://gg.deals/vouchers/gamivo/', status: 'pending', lastCheck: null },
+            { merchant: 'K4G', url: 'https://gg.deals/vouchers/k4g/', status: 'pending', lastCheck: null },
+            { merchant: 'CDKeys', url: 'https://gg.deals/vouchers/cdkeys/', status: 'pending', lastCheck: null },
+            { merchant: 'Yuplay', url: 'https://gg.deals/vouchers/yuplay/', status: 'pending', lastCheck: null },
+            { merchant: 'Green Man Gaming', url: 'https://gg.deals/vouchers/green-man-gaming/', status: 'pending', lastCheck: null },
+        ]
+    },
+    'IsThereAnyDeal': {
+        logo: '🟡',
+        domain: 'isthereanydeal.com',
+        services: [
+            { name: 'Main Website', url: 'https://isthereanydeal.com/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals', url: 'https://isthereanydeal.com/deals/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Specials', url: 'https://isthereanydeal.com/specials/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Giveaways', url: 'https://isthereanydeal.com/giveaways/', status: 'online', lastCheck: null, responseTime: null },
+        ],
+        merchantVouchers: []
+    },
+    'CheapShark': {
+        logo: '🦈',
+        domain: 'cheapshark.com',
+        services: [
+            { name: 'Main Website', url: 'https://www.cheapshark.com/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Deals API', url: 'https://www.cheapshark.com/api/1.0/deals', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Stores API', url: 'https://www.cheapshark.com/api/1.0/stores', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Games API', url: 'https://www.cheapshark.com/api/1.0/games', status: 'online', lastCheck: null, responseTime: null },
+        ],
+        merchantVouchers: []
+    },
+    'DLCompare': {
+        logo: '🔴',
+        domain: 'dlcompare.fr',
+        services: [
+            { name: 'Main Website', url: 'https://www.dlcompare.fr/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Jeux PC', url: 'https://www.dlcompare.fr/jeux-pc/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Bons Plans', url: 'https://www.dlcompare.fr/bons-plans/', status: 'online', lastCheck: null, responseTime: null },
+            { name: 'Actualités', url: 'https://www.dlcompare.fr/actualites/', status: 'online', lastCheck: null, responseTime: null },
+        ],
+        merchantVouchers: []
+    }
+};
+
+// Discord webhook configuration
+const discordConfig = {
+    enabled: true,
+    webhookUrl: '',
+    channels: {
+        alerts: true,
+        priceDrops: true,
+        statusChanges: true,
+        dailyReport: false
+    }
+};
+
+// ===== COMPOSANTS =====
+function App() {
+    const [currentPage, setCurrentPage] = useState('dashboard');
+    const [selectedGame, setSelectedGame] = useState('GTA VI');
+
+    return (
+        <div className="flex min-h-screen">
+            <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+            <main className="flex-1 p-6 overflow-auto">
+                {currentPage === 'dashboard' && <Dashboard setCurrentPage={setCurrentPage} />}
+                {currentPage === 'comparators' && <ComparatorsPage />}
+                {currentPage === 'merchants' && <MerchantsPage />}
+                {currentPage === 'sitemap' && <SitemapChecker />}
+                {currentPage === 'price-tracker' && <PriceTrackerPage />}
+                {currentPage === 'coupon-tracker' && <CouponTrackerPage />}
+                {currentPage === 'prices' && <PriceChecker selectedGame={selectedGame} setSelectedGame={setSelectedGame} />}
+                {currentPage === 'status' && <StatusChecker />}
+                {currentPage === 'alerts' && <AlertsPage />}
+                {currentPage === 'settings' && <SettingsPage />}
+            </main>
+        </div>
+    );
+}
+
+function Sidebar({ currentPage, setCurrentPage }) {
+    const alertCount = Object.values(serviceStatus).reduce((acc, site) => {
+        const mainAlerts = site.services.filter(s => s.status === 'offline' || s.status === 'warning').length;
+        const merchantAlerts = site.merchantVouchers.filter(m => m.status === 'offline' || m.status === 'warning').length;
+        return acc + mainAlerts + merchantAlerts;
+    }, 0);
+
+    const menuItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: 'fa-th-large' },
+        { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
+        { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
+        { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
+        { id: 'price-tracker', label: 'Relevés Prix', icon: 'fa-clipboard-check', badge: null },
+        { id: 'coupon-tracker', label: 'Relevés Coupons', icon: 'fa-ticket-alt', badge: null },
+        { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
+        { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: alertCount > 0 ? alertCount : null },
+        { id: 'alerts', label: 'Alertes', icon: 'fa-bell', badge: recentAlerts.filter(a => a.severity === 'high').length },
+        { id: 'settings', label: 'Paramètres', icon: 'fa-cog' },
+    ];
+
+    return (
+        <aside className="w-64 bg-dark-800 border-r border-dark-600 p-4 flex flex-col">
+            <div className="flex items-center space-x-3 mb-8 px-2">
+                <div className="w-10 h-10 bg-accent-blue rounded-lg flex items-center justify-center">
+                    <i className="fas fa-crosshairs text-white"></i>
+                </div>
+                <div>
+                    <div className="font-bold text-white">CI War Room</div>
+                    <div className="text-xs text-gray-500">Gaming Keys Intel</div>
+                </div>
+            </div>
+
+            <nav className="flex-1 space-y-1">
+                {menuItems.map(item => (
+                    <button
+                        key={item.id}
+                        onClick={() => setCurrentPage(item.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition ${
+                            currentPage === item.id
+                                ? 'bg-accent-blue text-white'
+                                : 'text-gray-400 hover:bg-dark-700 hover:text-white'
+                        }`}
+                    >
+                        <div className="flex items-center space-x-3">
+                            <i className={`fas ${item.icon} w-5`}></i>
+                            <span className="font-medium text-sm">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                            <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{item.badge}</span>
+                        )}
+                        {item.count && (
+                            <span className="text-xs text-gray-500">{item.count}</span>
+                        )}
+                    </button>
+                ))}
+            </nav>
+
+            <div className="mt-auto pt-4 border-t border-dark-600">
+                <div className="flex items-center space-x-2 px-4 py-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full status-dot"></div>
+                    <span className="text-xs text-gray-500">Monitoring actif</span>
+                </div>
+                <div className="text-xs text-gray-600 px-4">
+                    Scan: {new Date().toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+            </div>
+        </aside>
+    );
+}
+
+function Dashboard({ setCurrentPage }) {
+    const totalPages = comparators.reduce((sum, c) => sum + c.pagesIndexed, 0);
+    const totalNew24h = comparators.reduce((sum, c) => sum + c.newPages24h, 0);
+    const highAlerts = recentAlerts.filter(a => a.severity === 'high').length;
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Dashboard</h1>
+                    <p className="text-gray-500">Veille concurrentielle - Comparateurs & Marchands de clés</p>
+                </div>
+                <button className="px-4 py-2 bg-accent-blue rounded-lg font-medium hover:bg-blue-600 transition flex items-center space-x-2">
+                    <i className="fas fa-sync-alt"></i>
+                    <span>Actualiser</span>
+                </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+                {[
+                    { label: 'Comparateurs', value: comparators.length, icon: 'fa-balance-scale', color: 'blue' },
+                    { label: 'Marchands', value: merchants.length, icon: 'fa-store', color: 'green' },
+                    { label: 'Pages indexées', value: (totalPages/1000000).toFixed(1) + 'M', icon: 'fa-file', color: 'purple' },
+                    { label: 'Nouvelles 24h', value: '+' + totalNew24h, icon: 'fa-plus', color: 'yellow' },
+                    { label: 'Alertes critiques', value: highAlerts, icon: 'fa-exclamation', color: 'red' },
+                ].map((stat, i) => (
+                    <div key={i} className="glass rounded-xl p-4 border border-dark-600">
+                        <div className={`w-10 h-10 bg-accent-${stat.color}/20 rounded-lg flex items-center justify-center mb-3`}>
+                            <i className={`fas ${stat.icon} text-accent-${stat.color}`}></i>
+                        </div>
+                        <div className="text-2xl font-bold">{stat.value}</div>
+                        <div className="text-sm text-gray-500">{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+                {/* Alertes */}
+                <div className="col-span-2 glass rounded-xl border border-dark-600 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-semibold flex items-center">
+                            <i className="fas fa-bell text-accent-red mr-2"></i>
+                            Alertes récentes
+                        </h2>
+                        <button onClick={() => setCurrentPage('alerts')} className="text-sm text-accent-blue hover:underline">
+                            Tout voir →
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        {recentAlerts.slice(0, 6).map(alert => (
+                            <div key={alert.id} className={`p-3 rounded-lg border-l-4 ${
+                                alert.severity === 'high' ? 'bg-red-500/10 border-red-500' :
+                                alert.severity === 'medium' ? 'bg-yellow-500/10 border-yellow-500' :
+                                'bg-gray-500/10 border-gray-500'
+                            }`}>
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <span className="font-medium text-sm">{alert.competitor}</span>
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                                alert.type === 'price_drop' ? 'bg-green-500/20 text-green-400' :
+                                                alert.type === 'new_feature' ? 'bg-purple-500/20 text-purple-400' :
+                                                alert.type === 'sitemap' ? 'bg-blue-500/20 text-blue-400' :
+                                                alert.type === 'promo' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                alert.type === 'seo' ? 'bg-orange-500/20 text-orange-400' :
+                                                'bg-gray-500/20 text-gray-400'
+                                            }`}>{alert.type.replace('_', ' ')}</span>
+                                        </div>
+                                        <p className="text-sm text-gray-300">{alert.message}</p>
+                                    </div>
+                                    <span className="text-xs text-gray-500 ml-2">{alert.time}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Top menaces */}
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4 flex items-center">
+                        <i className="fas fa-exclamation-triangle text-accent-yellow mr-2"></i>
+                        Menaces prioritaires
+                    </h2>
+                    <div className="space-y-3">
+                        {[...comparators, ...merchants].filter(c => c.threat === 'high').map(comp => (
+                            <div key={comp.id + comp.name} className="flex items-center justify-between p-2 rounded-lg bg-dark-700/50 hover:bg-dark-700">
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-xl">{comp.logo}</span>
+                                    <div>
+                                        <div className="font-medium text-sm">{comp.name}</div>
+                                        <div className="text-xs text-gray-500">{comp.domain}</div>
+                                    </div>
+                                </div>
+                                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">HAUTE</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Sitemap evolution */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h2 className="font-semibold mb-4 flex items-center">
+                    <i className="fas fa-chart-line text-accent-blue mr-2"></i>
+                    Évolution pages indexées (7 jours)
+                </h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-gray-500 border-b border-dark-600">
+                                <th className="text-left py-2 font-medium">Date</th>
+                                <th className="text-right font-medium">🔵 AllKeyShop</th>
+                                <th className="text-right font-medium">🟢 GG.deals</th>
+                                <th className="text-right font-medium">🟡 ITAD</th>
+                                <th className="text-right font-medium">🔴 DLCompare</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sitemapHistory.map((row, i) => (
+                                <tr key={i} className="border-b border-dark-700/50">
+                                    <td className="py-2 text-gray-400">{row.date}</td>
+                                    <td className="text-right font-mono">{row.allkeyshop.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.ggdeals.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.itad.toLocaleString()}</td>
+                                    <td className="text-right font-mono">{row.dlcompare.toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ComparatorsPage() {
+    return (
+        <div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold">Comparateurs de prix</h1>
+                <p className="text-gray-500">{comparators.length} comparateurs surveillés</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                {comparators.map(comp => (
+                    <div key={comp.id} className="glass rounded-xl border border-dark-600 p-5">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                                <span className="text-3xl">{comp.logo}</span>
+                                <div>
+                                    <div className="font-bold text-lg">{comp.name}</div>
+                                    <a href={`https://${comp.domain}`} target="_blank" className="text-sm text-accent-blue hover:underline">{comp.domain}</a>
+                                </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                comp.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                comp.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                            }`}>
+                                Menace {comp.threat === 'high' ? 'haute' : comp.threat === 'medium' ? 'moyenne' : 'faible'}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">Pages</div>
+                                <div className="font-bold text-lg">{(comp.pagesIndexed/1000).toFixed(0)}k</div>
+                            </div>
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">24h</div>
+                                <div className="font-bold text-lg text-green-400">+{comp.newPages24h}</div>
+                            </div>
+                            <div className="bg-dark-700 rounded-lg p-3 text-center">
+                                <div className="text-xs text-gray-500">Part marché</div>
+                                <div className="font-bold text-lg">{comp.marketShare}</div>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-gray-400 mb-3">{comp.notes}</p>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>Sitemap: <a href={comp.sitemapUrl} target="_blank" className="text-accent-blue hover:underline">Voir</a></span>
+                            <span>Check: {comp.lastCheck}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MerchantsPage() {
+    return (
+        <div>
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold">Marchands de clés</h1>
+                <p className="text-gray-500">{merchants.length} marchands surveillés</p>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-dark-700">
+                        <tr>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Marchand</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix moy.</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Fiabilité TPA</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Catalogue</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Dernière promo</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Menace</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-600">
+                        {merchants.map(m => (
+                            <tr key={m.id} className="hover:bg-dark-700/50">
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center space-x-3">
+                                        <span className="text-xl">{m.logo}</span>
+                                        <div>
+                                            <div className="font-medium">{m.name}</div>
+                                            <div className="text-xs text-gray-500">{m.domain}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono">{m.avgPrice}€</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`font-bold ${m.reliability >= 80 ? 'text-green-400' : m.reliability >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {m.reliability}%
+                                    </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-400">{m.inventory.toLocaleString()}</td>
+                                <td className="px-4 py-3">
+                                    <span className="text-sm text-yellow-400"><i className="fas fa-tag mr-1"></i>{m.lastPromo}</span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded text-xs ${
+                                        m.threat === 'high' ? 'bg-red-500/20 text-red-400' :
+                                        m.threat === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-green-500/20 text-green-400'
+                                    }`}>{m.threat}</span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function SitemapChecker() {
+    const [scanning, setScanning] = useState(false);
+    const [scanProgress, setScanProgress] = useState({ current: 0, total: 0, site: '' });
+    const [sitemapData, setSitemapData] = useState(() => {
+        // Charger depuis localStorage si disponible
+        const saved = localStorage.getItem('ci_sitemap_data');
+        if (saved) {
+            try { return JSON.parse(saved); } catch(e) { return {}; }
+        }
+        return {};
+    });
+
+    // Fetch un sitemap via proxy CORS
+    const fetchSitemap = async (url) => {
+        try {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(30000) });
+            if (!response.ok) return { error: `HTTP ${response.status}`, urls: 0 };
+            const text = await response.text();
+            return { text, error: null };
+        } catch (error) {
+            return { error: error.message || 'Timeout', urls: 0 };
+        }
+    };
+
+    // Parser XML et compter URLs
+    const parseSitemapXml = (xmlText) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlText, 'text/xml');
+
+        // Vérifier si c'est un sitemap index
+        const sitemapTags = doc.querySelectorAll('sitemap loc');
+        if (sitemapTags.length > 0) {
+            // C'est un sitemap index - retourner les sous-sitemaps
+            return { type: 'index', sitemaps: Array.from(sitemapTags).map(tag => tag.textContent) };
+        }
+
+        // C'est un sitemap normal - compter les URLs
+        const urlTags = doc.querySelectorAll('url loc');
+        return { type: 'sitemap', count: urlTags.length };
+    };
+
+    // Scanner un site complet (récursif pour sitemap index)
+    const scanSite = async (sitemapUrl, maxSubsitemaps = 50) => {
+        const result = await fetchSitemap(sitemapUrl);
+        if (result.error) return { count: 0, error: result.error };
+
+        const parsed = parseSitemapXml(result.text);
+
+        if (parsed.type === 'sitemap') {
+            return { count: parsed.count, error: null };
+        }
+
+        // C'est un sitemap index - scanner les sous-sitemaps (limité)
+        let totalCount = 0;
+        const subsitemaps = parsed.sitemaps.slice(0, maxSubsitemaps);
+
+        for (const subUrl of subsitemaps) {
+            const subResult = await fetchSitemap(subUrl);
+            if (!subResult.error) {
+                const subParsed = parseSitemapXml(subResult.text);
+                if (subParsed.type === 'sitemap') {
+                    totalCount += subParsed.count;
+                }
+            }
+        }
+
+        // Si on a limité, extrapoler
+        if (parsed.sitemaps.length > maxSubsitemaps) {
+            const avgPerSitemap = totalCount / subsitemaps.length;
+            totalCount = Math.round(avgPerSitemap * parsed.sitemaps.length);
+        }
+
+        return { count: totalCount, subsitemaps: parsed.sitemaps.length, error: null };
+    };
+
+    // Scanner tous les comparateurs
+    const runFullScan = async () => {
+        setScanning(true);
+        setScanProgress({ current: 0, total: comparators.length, site: '' });
+
+        const now = new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const newData = { ...sitemapData };
+
+        for (let i = 0; i < comparators.length; i++) {
+            const comp = comparators[i];
+            setScanProgress({ current: i + 1, total: comparators.length, site: comp.name });
+
+            const result = await scanSite(comp.sitemapUrl);
+
+            // Calculer la différence avec le scan précédent
+            const previousCount = newData[comp.name]?.count || 0;
+            const diff = result.count - previousCount;
+
+            newData[comp.name] = {
+                count: result.count,
+                previousCount: previousCount,
+                diff: diff,
+                lastCheck: now,
+                error: result.error,
+                subsitemaps: result.subsitemaps || null
+            };
+
+            setSitemapData({...newData});
+        }
+
+        // Sauvegarder dans localStorage
+        localStorage.setItem('ci_sitemap_data', JSON.stringify(newData));
+        setScanning(false);
+    };
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Sitemap Checker</h1>
+                    <p className="text-gray-500">Surveillance des sitemaps concurrents (données réelles)</p>
+                </div>
+                <button
+                    onClick={runFullScan}
+                    disabled={scanning}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {scanning ? (
+                        <><i className="fas fa-spinner fa-spin"></i><span>Scan {scanProgress.current}/{scanProgress.total} ({scanProgress.site})</span></>
+                    ) : (
+                        <><i className="fas fa-satellite-dish"></i><span>Scanner les sitemaps</span></>
+                    )}
+                </button>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden mb-6">
+                <table className="w-full">
+                    <thead className="bg-dark-700">
+                        <tr>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Site</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">URL Sitemap</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Pages</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Diff</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Status</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Dernier check</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-600">
+                        {comparators.map(c => {
+                            const data = sitemapData[c.name];
+                            const hasData = data && data.count > 0;
+                            const hasError = data && data.error;
+
+                            return (
+                                <tr key={c.id} className="hover:bg-dark-700/50">
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-xl">{c.logo}</span>
+                                            <div>
+                                                <span className="font-medium">{c.name}</span>
+                                                {data?.subsitemaps && <span className="text-xs text-gray-500 ml-2">({data.subsitemaps} sous-sitemaps)</span>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <a href={c.sitemapUrl} target="_blank" className="text-accent-blue hover:underline text-sm truncate block max-w-xs">{c.sitemapUrl}</a>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono">
+                                        {hasData ? data.count.toLocaleString() : <span className="text-gray-500">-</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {hasData && data.diff !== 0 ? (
+                                            <span className={`font-semibold ${data.diff > 0 ? (data.diff > 1000 ? 'text-red-400' : data.diff > 100 ? 'text-yellow-400' : 'text-green-400') : 'text-blue-400'}`}>
+                                                {data.diff > 0 ? '+' : ''}{data.diff.toLocaleString()}
+                                            </span>
+                                        ) : hasData ? (
+                                            <span className="text-gray-500">0</span>
+                                        ) : (
+                                            <span className="text-gray-500">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        {hasError ? (
+                                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded" title={data.error}>Erreur</span>
+                                        ) : hasData ? (
+                                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">OK</span>
+                                        ) : (
+                                            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded">En attente</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-sm text-gray-400">
+                                        {data?.lastCheck || '-'}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="glass rounded-xl border border-dark-600 p-4">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong className="text-green-400">Données réelles</strong> : Les sitemaps sont fetchés et parsés en temps réel</li>
+                    <li>• <strong>Diff</strong> : Compare avec le dernier scan (stocké en localStorage)</li>
+                    <li>• <strong>Sitemap index</strong> : Si le sitemap contient des sous-sitemaps, on en scanne jusqu'à 50 et extrapole</li>
+                    <li>• <strong>Proxy CORS</strong> : Utilise api.allorigins.win pour contourner les restrictions navigateur</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+function PriceChecker({ selectedGame, setSelectedGame }) {
+    const [offers, setOffers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Config Supabase (partagée avec PriceTracker)
+    const supabaseConfig = {
+        url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+    };
+
+    // Charger les données depuis Supabase
+    const loadData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [offersRes, checksRes] = await Promise.all([
+                fetch(`${supabaseConfig.url}/rest/v1/offers?select=*&order=created_at.desc`, {
+                    headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+                }),
+                fetch(`${supabaseConfig.url}/rest/v1/price_checks?select=*&order=check_date.desc`, {
+                    headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+                })
+            ]);
+            if (!offersRes.ok || !checksRes.ok) throw new Error('Erreur chargement');
+            const [offersData, checksData] = await Promise.all([offersRes.json(), checksRes.json()]);
+
+            // Associer les checks aux offers
+            const offersWithHistory = offersData.map(offer => ({
+                ...offer,
+                history: checksData.filter(c => c.offer_id === offer.id),
+                lastCheck: checksData.find(c => c.offer_id === offer.id)
+            }));
+            setOffers(offersWithHistory);
+
+            // Sélectionner le premier jeu si aucun sélectionné
+            if (!selectedGame && offersWithHistory.length > 0) {
+                const games = [...new Set(offersWithHistory.map(o => o.name).filter(Boolean))];
+                if (games.length > 0) setSelectedGame(games[0]);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    // Extraire les jeux uniques
+    const games = [...new Set(offers.map(o => o.name).filter(Boolean))];
+
+    // Filtrer les offres pour le jeu sélectionné
+    const gameOffers = offers.filter(o => o.name === selectedGame);
+
+    // Calculer les stats de précision par source (comparateur/marchand)
+    const calculatePrecision = (offer) => {
+        if (!offer.displayed_price || !offer.lastCheck?.checkout_price) return null;
+        const diff = offer.lastCheck.checkout_price - offer.displayed_price;
+        const pct = (diff / offer.displayed_price * 100);
+        return { diff, pct, isAccurate: Math.abs(pct) < 2 };
+    };
+
+    // Trier par écart (les plus précis d'abord)
+    const sortedOffers = [...gameOffers].sort((a, b) => {
+        const precA = calculatePrecision(a);
+        const precB = calculatePrecision(b);
+        if (!precA && !precB) return 0;
+        if (!precA) return 1;
+        if (!precB) return -1;
+        return Math.abs(precA.pct) - Math.abs(precB.pct);
+    });
+
+    // Stats globales
+    const offersWithPrecision = sortedOffers.filter(o => calculatePrecision(o));
+    const avgPrecision = offersWithPrecision.length > 0
+        ? offersWithPrecision.reduce((sum, o) => sum + Math.abs(calculatePrecision(o).pct), 0) / offersWithPrecision.length
+        : 0;
+    const accurateCount = offersWithPrecision.filter(o => calculatePrecision(o).isAccurate).length;
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Price Checker</h1>
+                    <p className="text-gray-500">Précision des prix comparateurs vs prix réels marchands</p>
+                </div>
+                <button
+                    onClick={loadData}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                </button>
+            </div>
+
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {games.length > 0 ? (
+                <>
+                    <div className="glass rounded-xl border border-dark-600 p-4 mb-6">
+                        <label className="block text-sm text-gray-400 mb-3">Sélectionner un jeu ({games.length} disponibles)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {games.map(game => (
+                                <button
+                                    key={game}
+                                    onClick={() => setSelectedGame(game)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                                        selectedGame === game ? 'bg-accent-blue text-white' : 'bg-dark-700 hover:bg-dark-600 text-gray-300'
+                                    }`}
+                                >
+                                    {game}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedGame && sortedOffers.length > 0 && (
+                        <>
+                            {/* Stats */}
+                            <div className="grid grid-cols-4 gap-4 mb-6">
+                                <div className="glass rounded-xl border border-dark-600 p-4">
+                                    <div className="text-sm text-gray-500 mb-1">Offres suivies</div>
+                                    <div className="text-2xl font-bold">{sortedOffers.length}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-dark-600 p-4">
+                                    <div className="text-sm text-gray-500 mb-1">Avec relevé prix</div>
+                                    <div className="text-2xl font-bold">{offersWithPrecision.length}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                                    <div className="text-sm text-green-400 mb-1">Prix précis (&lt;2%)</div>
+                                    <div className="text-2xl font-bold text-green-400">{accurateCount}</div>
+                                </div>
+                                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
+                                    <div className="text-sm text-yellow-400 mb-1">Écart moyen</div>
+                                    <div className="text-2xl font-bold text-yellow-400">{avgPrecision.toFixed(1)}%</div>
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                                <div className="p-4 border-b border-dark-600">
+                                    <h2 className="text-xl font-bold">{selectedGame}</h2>
+                                    <p className="text-sm text-gray-500">Comparaison prix affiché (comparateur) vs prix réel (checkout marchand)</p>
+                                </div>
+                                <table className="w-full">
+                                    <thead className="bg-dark-700">
+                                        <tr>
+                                            <th className="text-left px-4 py-3 text-sm font-semibold">Source / Marchand</th>
+                                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix affiché</th>
+                                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix checkout</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Écart</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Précision</th>
+                                            <th className="text-center px-4 py-3 text-sm font-semibold">Preuve</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dark-600">
+                                        {sortedOffers.map((offer, i) => {
+                                            const precision = calculatePrecision(offer);
+                                            return (
+                                                <tr key={offer.id} className={`hover:bg-dark-700/50 ${precision?.isAccurate ? 'bg-green-500/5' : precision && Math.abs(precision.pct) > 10 ? 'bg-red-500/5' : ''}`}>
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium">{offer.store || 'Inconnu'}</div>
+                                                        <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono">
+                                                        {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono">
+                                                        {offer.lastCheck?.checkout_price ? `${offer.lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {precision ? (
+                                                            <span className={`font-semibold ${precision.diff > 0 ? 'text-red-400' : precision.diff < 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                                                                {precision.diff > 0 ? '+' : ''}{precision.diff.toFixed(2)}€
+                                                            </span>
+                                                        ) : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {precision ? (
+                                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                                precision.isAccurate ? 'bg-green-500/20 text-green-400' :
+                                                                Math.abs(precision.pct) > 10 ? 'bg-red-500/20 text-red-400' :
+                                                                'bg-yellow-500/20 text-yellow-400'
+                                                            }`}>
+                                                                {precision.pct > 0 ? '+' : ''}{precision.pct.toFixed(1)}%
+                                                            </span>
+                                                        ) : <span className="text-gray-500">-</span>}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {offer.lastCheck?.screenshot_url ? (
+                                                            <a href={offer.lastCheck.screenshot_url} target="_blank" className="text-accent-blue hover:underline">
+                                                                <i className="fas fa-image"></i>
+                                                            </a>
+                                                        ) : offer.displayed_price_screenshot ? (
+                                                            <a href={offer.displayed_price_screenshot} target="_blank" className="text-accent-blue hover:underline">
+                                                                <i className="fas fa-image"></i>
+                                                            </a>
+                                                        ) : '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </>
+            ) : !loading && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucune donnée de prix</p>
+                    <p className="text-sm text-gray-600 mt-2">Utilisez l'extension Chrome pour capturer des relevés de prix</p>
+                </div>
+            )}
+
+            {/* Légende */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comprendre les données</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Prix affiché</strong> : Prix vu sur le comparateur (AllKeyShop, GG.deals...)</li>
+                    <li>• <strong>Prix checkout</strong> : Prix réel au moment de payer chez le marchand</li>
+                    <li>• <strong className="text-green-400">Précis (&lt;2%)</strong> : Le comparateur affiche le bon prix</li>
+                    <li>• <strong className="text-yellow-400">Écart modéré (2-10%)</strong> : Légère différence</li>
+                    <li>• <strong className="text-red-400">Trompeur (&gt;10%)</strong> : Prix affiché très différent du réel</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+function StatusChecker() {
+    const [scanning, setScanning] = useState(false);
+    const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
+    const [expandedSites, setExpandedSites] = useState(['AllKeyShop', 'GG.deals', 'DLCompare']);
+    const [statusData, setStatusData] = useState(serviceStatus);
+
+    const toggleSite = (site) => {
+        if (expandedSites.includes(site)) {
+            setExpandedSites(expandedSites.filter(s => s !== site));
+        } else {
+            setExpandedSites([...expandedSites, site]);
+        }
+    };
+
+    // Vérifier une URL via proxy CORS
+    const checkUrl = async (url) => {
+        const startTime = Date.now();
+        try {
+            // Utiliser allorigins comme proxy CORS
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                signal: AbortSignal.timeout(10000) // 10s timeout
+            });
+            const responseTime = Date.now() - startTime;
+            const text = await response.text();
+
+            // Vérifier si c'est une page WordPress vide ou "no content"
+            const isEmptyWordPress = text.includes('No posts found') ||
+                                     text.includes('Nothing Found') ||
+                                     text.includes('no-results') ||
+                                     (text.length < 1000 && text.includes('WordPress'));
+
+            if (!response.ok || response.status === 404) {
+                return { status: 'offline', responseTime, error: `HTTP ${response.status}` };
+            } else if (isEmptyWordPress) {
+                return { status: 'warning', responseTime, error: 'Page vide/no content' };
+            } else if (responseTime > 2000) {
+                return { status: 'warning', responseTime, error: 'Réponse lente' };
+            }
+            return { status: 'online', responseTime, error: null };
+        } catch (error) {
+            const responseTime = Date.now() - startTime;
+            if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+                return { status: 'error', responseTime, error: 'Timeout (10s)' };
+            }
+            return { status: 'error', responseTime, error: error.message || 'Connection failed' };
+        }
+    };
+
+    // Scanner toutes les URLs
+    const runFullScan = async () => {
+        setScanning(true);
+        const newStatusData = JSON.parse(JSON.stringify(statusData));
+
+        // Compter le total d'URLs à scanner
+        let totalUrls = 0;
+        Object.values(newStatusData).forEach(site => {
+            totalUrls += site.services.length + site.merchantVouchers.length;
+        });
+        setScanProgress({ current: 0, total: totalUrls });
+
+        let currentCount = 0;
+        const now = new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+        // Scanner chaque site
+        for (const [siteName, siteData] of Object.entries(newStatusData)) {
+            // Scanner les services principaux
+            for (let i = 0; i < siteData.services.length; i++) {
+                const result = await checkUrl(siteData.services[i].url);
+                newStatusData[siteName].services[i] = {
+                    ...siteData.services[i],
+                    status: result.status,
+                    responseTime: result.responseTime,
+                    error: result.error,
+                    lastCheck: now
+                };
+                currentCount++;
+                setScanProgress({ current: currentCount, total: totalUrls });
+                setStatusData({...newStatusData});
+            }
+
+            // Scanner les pages vouchers marchands
+            for (let i = 0; i < siteData.merchantVouchers.length; i++) {
+                const result = await checkUrl(siteData.merchantVouchers[i].url);
+                newStatusData[siteName].merchantVouchers[i] = {
+                    ...siteData.merchantVouchers[i],
+                    status: result.status,
+                    responseTime: result.responseTime,
+                    error: result.error,
+                    lastCheck: now
+                };
+                currentCount++;
+                setScanProgress({ current: currentCount, total: totalUrls });
+                setStatusData({...newStatusData});
+            }
+        }
+
+        setScanning(false);
+    };
+
+    const getStatusIcon = (status) => {
+        switch(status) {
+            case 'online': return <span className="text-green-400"><i className="fas fa-check-circle"></i></span>;
+            case 'offline': return <span className="text-red-400"><i className="fas fa-times-circle"></i></span>;
+            case 'warning': return <span className="text-yellow-400"><i className="fas fa-exclamation-triangle"></i></span>;
+            case 'pending': return <span className="text-blue-400"><i className="fas fa-clock"></i></span>;
+            case 'error': return <span className="text-red-400"><i className="fas fa-exclamation-circle"></i></span>;
+            default: return <span className="text-gray-400"><i className="fas fa-question-circle"></i></span>;
+        }
+    };
+
+    const getStatusBg = (status) => {
+        switch(status) {
+            case 'online': return 'bg-green-500/10 border-green-500/30';
+            case 'offline': return 'bg-red-500/10 border-red-500/30';
+            case 'warning': return 'bg-yellow-500/10 border-yellow-500/30';
+            case 'pending': return 'bg-blue-500/10 border-blue-500/30';
+            case 'error': return 'bg-red-500/10 border-red-500/30';
+            default: return 'bg-gray-500/10 border-gray-500/30';
+        }
+    };
+
+    const totalServices = Object.values(statusData).reduce((acc, site) => acc + site.services.length + site.merchantVouchers.length, 0);
+    const onlineCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'online').length + site.merchantVouchers.filter(m => m.status === 'online').length;
+    }, 0);
+    const offlineCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'offline').length + site.merchantVouchers.filter(m => m.status === 'offline').length;
+    }, 0);
+    const warningCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'warning').length + site.merchantVouchers.filter(m => m.status === 'warning').length;
+    }, 0);
+    const pendingCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'pending').length + site.merchantVouchers.filter(m => m.status === 'pending').length;
+    }, 0);
+    const errorCount = Object.values(statusData).reduce((acc, site) => {
+        return acc + site.services.filter(s => s.status === 'error').length + site.merchantVouchers.filter(m => m.status === 'error').length;
+    }, 0);
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Status Checker</h1>
+                    <p className="text-gray-500">Monitoring santé des services concurrents</p>
+                </div>
+                <button
+                    onClick={runFullScan}
+                    disabled={scanning}
+                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                        scanning ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                    }`}
+                >
+                    {scanning ? (
+                        <><i className="fas fa-spinner fa-spin"></i><span>Scan {scanProgress.current}/{scanProgress.total}</span></>
+                    ) : (
+                        <><i className="fas fa-satellite-dish"></i><span>Scanner tout</span></>
+                    )}
+                </button>
+            </div>
+
+            {/* Stats globales */}
+            <div className="grid grid-cols-6 gap-4 mb-6">
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Total services</div>
+                    <div className="text-2xl font-bold">{totalServices}</div>
+                </div>
+                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                    <div className="text-sm text-green-400 mb-1"><i className="fas fa-check-circle mr-1"></i>En ligne</div>
+                    <div className="text-2xl font-bold text-green-400">{onlineCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
+                    <div className="text-sm text-blue-400 mb-1"><i className="fas fa-clock mr-1"></i>En attente</div>
+                    <div className="text-2xl font-bold text-blue-400">{pendingCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
+                    <div className="text-sm text-yellow-400 mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>Warnings</div>
+                    <div className="text-2xl font-bold text-yellow-400">{warningCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                    <div className="text-sm text-red-400 mb-1"><i className="fas fa-times-circle mr-1"></i>Hors ligne</div>
+                    <div className="text-2xl font-bold text-red-400">{offlineCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                    <div className="text-sm text-red-400 mb-1"><i className="fas fa-exclamation-circle mr-1"></i>Erreurs</div>
+                    <div className="text-2xl font-bold text-red-400">{errorCount}</div>
+                </div>
+            </div>
+
+            {/* Tree structure par site */}
+            <div className="space-y-4">
+                {Object.entries(statusData).map(([siteName, siteData]) => {
+                    const isExpanded = expandedSites.includes(siteName);
+                    const siteOffline = siteData.services.filter(s => s.status === 'offline').length + siteData.merchantVouchers.filter(m => m.status === 'offline').length;
+                    const siteWarning = siteData.services.filter(s => s.status === 'warning').length + siteData.merchantVouchers.filter(m => m.status === 'warning').length;
+                    const siteOnline = siteData.services.filter(s => s.status === 'online').length + siteData.merchantVouchers.filter(m => m.status === 'online').length;
+                    const sitePending = siteData.services.filter(s => s.status === 'pending').length + siteData.merchantVouchers.filter(m => m.status === 'pending').length;
+                    const siteError = siteData.services.filter(s => s.status === 'error').length + siteData.merchantVouchers.filter(m => m.status === 'error').length;
+                    const totalSiteServices = siteData.services.length + siteData.merchantVouchers.length;
+
+                    return (
+                        <div key={siteName} className="glass rounded-xl border border-dark-600 overflow-hidden">
+                            {/* Site header */}
+                            <div
+                                className="p-4 flex items-center justify-between cursor-pointer hover:bg-dark-700/50 transition"
+                                onClick={() => toggleSite(siteName)}
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-2xl">{siteData.logo}</span>
+                                    <div>
+                                        <div className="font-bold text-lg">{siteName}</div>
+                                        <div className="text-sm text-gray-500">{siteData.domain}</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2 text-sm">
+                                        {siteOnline > 0 && <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">{siteOnline} <i className="fas fa-check"></i></span>}
+                                        {sitePending > 0 && <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400">{sitePending} <i className="fas fa-clock"></i></span>}
+                                        {siteWarning > 0 && <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">{siteWarning} <i className="fas fa-exclamation"></i></span>}
+                                        {siteOffline > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteOffline} <i className="fas fa-times"></i></span>}
+                                        {siteError > 0 && <span className="px-2 py-1 rounded bg-red-500/20 text-red-400">{siteError} <i className="fas fa-exclamation-circle"></i></span>}
+                                    </div>
+                                    <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-500`}></i>
+                                </div>
+                            </div>
+
+                            {/* Expanded tree */}
+                            {isExpanded && (
+                                <div className="border-t border-dark-600 p-4 pl-6 space-y-2">
+                                    {/* Main services */}
+                                    <div className="mb-3">
+                                        <div className="text-xs text-gray-500 uppercase font-semibold mb-2 flex items-center">
+                                            <i className="fas fa-folder-open mr-2"></i>Services principaux
+                                        </div>
+                                        <div className="space-y-1 ml-4 border-l-2 border-dark-600 pl-4">
+                                            {siteData.services.map((service, idx) => (
+                                                <div key={idx} className={`p-2 rounded border ${getStatusBg(service.status)} flex items-center justify-between`}>
+                                                    <div className="flex items-center space-x-3">
+                                                        {getStatusIcon(service.status)}
+                                                        <div>
+                                                            <div className="font-medium text-sm">{service.name}</div>
+                                                            <a href={service.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-md">{service.url}</a>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {service.responseTime && <div className="text-xs text-gray-400">{service.responseTime}ms</div>}
+                                                        {service.error && <div className="text-xs text-red-400">{service.error}</div>}
+                                                        <div className="text-xs text-gray-500">{service.lastCheck}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Merchant vouchers */}
+                                    {siteData.merchantVouchers.length > 0 && (
+                                        <div>
+                                            <div className="text-xs text-gray-500 uppercase font-semibold mb-2 flex items-center">
+                                                <i className="fas fa-ticket-alt mr-2"></i>Pages Vouchers par marchand
+                                            </div>
+                                            <div className="space-y-1 ml-4 border-l-2 border-dark-600 pl-4">
+                                                {siteData.merchantVouchers.map((voucher, idx) => (
+                                                    <div key={idx} className={`p-2 rounded border ${getStatusBg(voucher.status)} flex items-center justify-between`}>
+                                                        <div className="flex items-center space-x-3">
+                                                            {getStatusIcon(voucher.status)}
+                                                            <div>
+                                                                <div className="font-medium text-sm">{voucher.merchant}</div>
+                                                                <a href={voucher.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-md">{voucher.url}</a>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            {voucher.error && <div className="text-xs text-red-400">{voucher.error}</div>}
+                                                            <div className="text-xs text-gray-500">{voucher.lastCheck}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Info box */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Détection automatique</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong className="text-green-400">Online</strong> : Page accessible et contenu valide</li>
+                    <li>• <strong className="text-blue-400">En attente</strong> : URL non encore vérifiée (cliquez sur Scanner)</li>
+                    <li>• <strong className="text-yellow-400">Warning</strong> : Page vide, réponse lente (&gt;2s), ou contenu suspect</li>
+                    <li>• <strong className="text-red-400">Offline (404)</strong> : La page n'existe pas ou plus</li>
+                    <li>• <strong className="text-red-400">Error</strong> : Timeout, connexion refusée, ou erreur réseau</li>
+                </ul>
+                <p className="text-xs text-gray-500 mt-3">
+                    <i className="fas fa-server mr-1"></i> Les requêtes passent par un proxy CORS (api.allorigins.win) pour contourner les restrictions navigateur.
+                </p>
+            </div>
+        </div>
+    );
+}
+
+// ===== PRICE TRACKER - Connexion Supabase =====
+function PriceTrackerPage() {
+    const [offers, setOffers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedOffer, setSelectedOffer] = useState(null);
+    const [supabaseConfig, setSupabaseConfig] = useState(() => {
+        const saved = localStorage.getItem('ci_supabase_config');
+        if (saved) try { return JSON.parse(saved); } catch(e) {}
+        return {
+            url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+        };
+    });
+    const [configOpen, setConfigOpen] = useState(false);
+
+    // Charger les offres depuis Supabase
+    const loadOffers = async () => {
+        if (!supabaseConfig.url || !supabaseConfig.key) {
+            setError('Configuration Supabase manquante. Cliquez sur "Configurer" pour ajouter vos credentials.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Fetch offers
+            const offersRes = await fetch(`${supabaseConfig.url}/rest/v1/offers?select=*&order=created_at.desc`, {
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`
+                }
+            });
+            if (!offersRes.ok) throw new Error(`Offers: HTTP ${offersRes.status}`);
+            const offersData = await offersRes.json();
+
+            // Fetch price checks
+            const checksRes = await fetch(`${supabaseConfig.url}/rest/v1/price_checks?select=*&order=check_date.desc`, {
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`
+                }
+            });
+            if (!checksRes.ok) throw new Error(`Checks: HTTP ${checksRes.status}`);
+            const checksData = await checksRes.json();
+
+            // Associer les checks aux offers
+            const offersWithHistory = offersData.map(offer => ({
+                ...offer,
+                history: checksData.filter(c => c.offer_id === offer.id)
+            }));
+
+            setOffers(offersWithHistory);
+        } catch (err) {
+            setError(`Erreur: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Sauvegarder la config
+    const saveConfig = () => {
+        localStorage.setItem('ci_supabase_config', JSON.stringify(supabaseConfig));
+        setConfigOpen(false);
+        loadOffers();
+    };
+
+    // Charger au mount si config présente
+    useEffect(() => {
+        if (supabaseConfig.url && supabaseConfig.key) {
+            loadOffers();
+        }
+    }, []);
+
+    // Calculer l'écart prix affiché vs prix réel
+    const calcDiff = (offer) => {
+        if (!offer.history || offer.history.length === 0) return null;
+        const lastCheck = offer.history[0];
+        if (!offer.displayed_price || !lastCheck.checkout_price) return null;
+        const diff = lastCheck.checkout_price - offer.displayed_price;
+        const pct = (diff / offer.displayed_price * 100).toFixed(1);
+        return { diff: diff.toFixed(2), pct, isHigher: diff > 0 };
+    };
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Relevés de Prix</h1>
+                    <p className="text-gray-500">Données capturées via l'extension Chrome</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setConfigOpen(!configOpen)}
+                        className="px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg font-medium transition flex items-center space-x-2"
+                    >
+                        <i className="fas fa-cog"></i>
+                        <span>Configurer</span>
+                    </button>
+                    <button
+                        onClick={loadOffers}
+                        disabled={loading || !supabaseConfig.url}
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                            loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                        }`}
+                    >
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                    </button>
+                </div>
+            </div>
+
+            {/* Config panel */}
+            {configOpen && (
+                <div className="glass rounded-xl border border-accent-blue/50 p-4 mb-6 bg-accent-blue/5">
+                    <h3 className="font-semibold mb-3 flex items-center"><i className="fas fa-database text-accent-blue mr-2"></i>Configuration Supabase</h3>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">URL Supabase</label>
+                            <input
+                                type="text"
+                                value={supabaseConfig.url}
+                                onChange={(e) => setSupabaseConfig({...supabaseConfig, url: e.target.value})}
+                                placeholder="https://xxxxx.supabase.co"
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">API Key (anon/public)</label>
+                            <input
+                                type="password"
+                                value={supabaseConfig.key}
+                                onChange={(e) => setSupabaseConfig({...supabaseConfig, key: e.target.value})}
+                                placeholder="eyJhbGciOiJIUzI1NiIs..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                            />
+                        </div>
+                    </div>
+                    <button onClick={saveConfig} className="px-4 py-2 bg-accent-blue hover:bg-blue-600 rounded-lg font-medium transition">
+                        <i className="fas fa-save mr-2"></i>Sauvegarder et connecter
+                    </button>
+                </div>
+            )}
+
+            {/* Error */}
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {/* Stats */}
+            {offers.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Offres suivies</div>
+                        <div className="text-2xl font-bold">{offers.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Relevés total</div>
+                        <div className="text-2xl font-bold">{offers.reduce((sum, o) => sum + (o.history?.length || 0), 0)}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Avec écart &gt;5%</div>
+                        <div className="text-2xl font-bold text-yellow-400">
+                            {offers.filter(o => { const d = calcDiff(o); return d && Math.abs(parseFloat(d.pct)) > 5; }).length}
+                        </div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Stores</div>
+                        <div className="text-2xl font-bold">{new Set(offers.map(o => o.store).filter(Boolean)).size}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Offers table */}
+            {offers.length > 0 ? (
+                <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-dark-700">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Offre</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Store</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Prix affiché</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Prix checkout</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Écart</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Relevés</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dark-600">
+                            {offers.map(offer => {
+                                const diff = calcDiff(offer);
+                                const lastCheck = offer.history?.[0];
+                                return (
+                                    <tr key={offer.id} className="hover:bg-dark-700/50">
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium truncate max-w-xs" title={offer.name}>{offer.name || 'Sans nom'}</div>
+                                            <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-400">{offer.store || '-'}</td>
+                                        <td className="px-4 py-3 text-right font-mono">
+                                            {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-mono">
+                                            {lastCheck?.checkout_price ? `${lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            {diff ? (
+                                                <span className={`font-semibold ${diff.isHigher ? 'text-red-400' : 'text-green-400'}`}>
+                                                    {diff.isHigher ? '+' : ''}{diff.diff}€ ({diff.pct}%)
+                                                </span>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="px-2 py-1 bg-dark-600 rounded text-sm">{offer.history?.length || 0}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <button
+                                                onClick={() => setSelectedOffer(selectedOffer?.id === offer.id ? null : offer)}
+                                                className="px-2 py-1 bg-accent-blue/20 text-accent-blue rounded text-xs hover:bg-accent-blue/30"
+                                            >
+                                                {selectedOffer?.id === offer.id ? 'Fermer' : 'Historique'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            ) : !loading && !error && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucune offre trouvée</p>
+                    <p className="text-sm text-gray-600 mt-2">Utilisez l'extension Chrome pour capturer des prix</p>
+                </div>
+            )}
+
+            {/* Detail modal */}
+            {selectedOffer && (
+                <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold">
+                            <i className="fas fa-history text-accent-blue mr-2"></i>
+                            Historique: {selectedOffer.name || selectedOffer.url}
+                        </h3>
+                        {selectedOffer.displayed_price_screenshot && (
+                            <a href={selectedOffer.displayed_price_screenshot} target="_blank" className="text-sm text-accent-blue hover:underline">
+                                <i className="fas fa-image mr-1"></i>Screenshot
+                            </a>
+                        )}
+                    </div>
+                    {selectedOffer.history?.length > 0 ? (
+                        <div className="space-y-2 max-h-64 overflow-auto">
+                            {selectedOffer.history.map((check, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-dark-700 rounded-lg">
+                                    <div className="flex items-center space-x-4">
+                                        <span className="text-sm text-gray-400">{new Date(check.check_date).toLocaleString('fr-FR')}</span>
+                                        <span className="font-mono">{check.checkout_price?.toFixed(2)}€</span>
+                                        {check.payment_method && <span className="text-xs text-gray-500">({check.payment_method})</span>}
+                                    </div>
+                                    {check.screenshot_url && (
+                                        <a href={check.screenshot_url} target="_blank" className="text-accent-blue hover:underline text-sm">
+                                            <i className="fas fa-external-link-alt"></i>
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-center py-4">Aucun relevé pour cette offre</p>
+                    )}
+                </div>
+            )}
+
+            {/* Info */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Extension Chrome</strong> : Clic droit sur un prix → "Capture this price"</li>
+                    <li>• <strong>Créer une offre</strong> : Clic droit → "Add as offer to track"</li>
+                    <li>• <strong>Mettre à jour</strong> : Clic droit sur le prix checkout → "Update offer price"</li>
+                    <li>• <strong>Données</strong> : Stockées dans Supabase, synchronisées ici</li>
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+// ===== COUPON TRACKER - Tracking codes promo =====
+function CouponTrackerPage() {
+    const [coupons, setCoupons] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newCoupon, setNewCoupon] = useState({
+        code: '', vendor: '', promise: '', reality: '', game: '', source_url: '', notes: ''
+    });
+    const [supabaseConfig, setSupabaseConfig] = useState(() => {
+        const saved = localStorage.getItem('ci_supabase_config');
+        if (saved) try { return JSON.parse(saved); } catch(e) {}
+        return {
+            url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+        };
+    });
+
+    // Charger les coupons depuis Supabase
+    const loadCoupons = async () => {
+        if (!supabaseConfig.url || !supabaseConfig.key) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${supabaseConfig.url}/rest/v1/coupons?select=*&order=created_at.desc`, {
+                headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setCoupons(await res.json());
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Ajouter un coupon
+    const addCoupon = async () => {
+        if (!newCoupon.code || !newCoupon.vendor) {
+            setError('Code et vendeur requis');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`${supabaseConfig.url}/rest/v1/coupons`, {
+                method: 'POST',
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    code: newCoupon.code,
+                    vendor: newCoupon.vendor,
+                    promise: newCoupon.promise,
+                    reality: newCoupon.reality,
+                    game: newCoupon.game || null,
+                    source_url: newCoupon.source_url || null,
+                    notes: newCoupon.notes || null,
+                    is_fake: newCoupon.reality && newCoupon.promise !== newCoupon.reality
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setShowAddForm(false);
+            setNewCoupon({ code: '', vendor: '', promise: '', reality: '', game: '', source_url: '', notes: '' });
+            loadCoupons();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Charger au mount
+    useEffect(() => { loadCoupons(); }, []);
+
+    // Stats
+    const fakeCoupons = coupons.filter(c => c.is_fake);
+    const vendors = [...new Set(coupons.map(c => c.vendor))];
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Relevés de Coupons</h1>
+                    <p className="text-gray-500">Vérification des codes promo et réductions</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className="px-4 py-2 bg-accent-purple hover:bg-purple-600 rounded-lg font-medium transition flex items-center space-x-2"
+                    >
+                        <i className="fas fa-plus"></i>
+                        <span>Ajouter coupon</span>
+                    </button>
+                    <button
+                        onClick={loadCoupons}
+                        disabled={loading}
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                            loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                        }`}
+                    >
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                    </button>
+                </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {/* Add form */}
+            {showAddForm && (
+                <div className="glass rounded-xl border border-accent-purple/50 p-4 mb-6 bg-accent-purple/5">
+                    <h3 className="font-semibold mb-4 flex items-center">
+                        <i className="fas fa-ticket-alt text-accent-purple mr-2"></i>
+                        Ajouter un relevé de coupon
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Code promo *</label>
+                            <input
+                                type="text"
+                                value={newCoupon.code}
+                                onChange={(e) => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})}
+                                placeholder="SAVE10"
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 font-mono"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Vendeur *</label>
+                            <input
+                                type="text"
+                                value={newCoupon.vendor}
+                                onChange={(e) => setNewCoupon({...newCoupon, vendor: e.target.value})}
+                                placeholder="CDKeys, G2A..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Applicable sur (jeu)</label>
+                            <input
+                                type="text"
+                                value={newCoupon.game}
+                                onChange={(e) => setNewCoupon({...newCoupon, game: e.target.value})}
+                                placeholder="Tout, EA FC 25..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Promesse affichée</label>
+                            <input
+                                type="text"
+                                value={newCoupon.promise}
+                                onChange={(e) => setNewCoupon({...newCoupon, promise: e.target.value})}
+                                placeholder="-10%, -5€..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Réalité constatée</label>
+                            <input
+                                type="text"
+                                value={newCoupon.reality}
+                                onChange={(e) => setNewCoupon({...newCoupon, reality: e.target.value})}
+                                placeholder="-3%, Expiré..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">URL source</label>
+                            <input
+                                type="url"
+                                value={newCoupon.source_url}
+                                onChange={(e) => setNewCoupon({...newCoupon, source_url: e.target.value})}
+                                placeholder="https://..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm"
+                            />
+                        </div>
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm text-gray-400 mb-2">Notes</label>
+                        <textarea
+                            value={newCoupon.notes}
+                            onChange={(e) => setNewCoupon({...newCoupon, notes: e.target.value})}
+                            placeholder="Conditions non mentionnées, minimum d'achat caché..."
+                            className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm h-20"
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            Si "Réalité" diffère de "Promesse", le coupon sera marqué comme trompeur
+                        </p>
+                        <div className="flex space-x-2">
+                            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg">
+                                Annuler
+                            </button>
+                            <button onClick={addCoupon} disabled={loading} className="px-4 py-2 bg-accent-purple hover:bg-purple-600 rounded-lg">
+                                <i className="fas fa-save mr-2"></i>Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stats */}
+            {coupons.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Coupons suivis</div>
+                        <div className="text-2xl font-bold">{coupons.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Vendeurs</div>
+                        <div className="text-2xl font-bold">{vendors.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                        <div className="text-sm text-red-400 mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>Trompeurs</div>
+                        <div className="text-2xl font-bold text-red-400">{fakeCoupons.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                        <div className="text-sm text-green-400 mb-1"><i className="fas fa-check-circle mr-1"></i>Valides</div>
+                        <div className="text-2xl font-bold text-green-400">{coupons.length - fakeCoupons.length}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Coupons table */}
+            {coupons.length > 0 ? (
+                <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-dark-700">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Code</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Vendeur</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Promesse</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Réalité</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Applicable sur</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Status</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dark-600">
+                            {coupons.map(coupon => (
+                                <tr key={coupon.id} className={`hover:bg-dark-700/50 ${coupon.is_fake ? 'bg-red-500/5' : ''}`}>
+                                    <td className="px-4 py-3">
+                                        <code className="px-2 py-1 bg-dark-600 rounded font-mono text-sm">{coupon.code}</code>
+                                    </td>
+                                    <td className="px-4 py-3 font-medium">{coupon.vendor}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className="text-green-400 font-semibold">{coupon.promise || '-'}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className={`font-semibold ${coupon.is_fake ? 'text-red-400' : 'text-green-400'}`}>
+                                            {coupon.reality || coupon.promise || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-400">{coupon.game || 'Tout'}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        {coupon.is_fake ? (
+                                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded font-semibold">
+                                                <i className="fas fa-times mr-1"></i>TROMPEUR
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded font-semibold">
+                                                <i className="fas fa-check mr-1"></i>OK
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-sm text-gray-400">
+                                        {coupon.created_at ? new Date(coupon.created_at).toLocaleDateString('fr-FR') : '-'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : !loading && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-ticket-alt text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucun coupon relevé</p>
+                    <p className="text-sm text-gray-600 mt-2">Cliquez sur "Ajouter coupon" pour enregistrer un relevé</p>
+                </div>
+            )}
+
+            {/* Info */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Promesse</strong> : Ce que le comparateur ou le vendeur affiche (ex: -10%)</li>
+                    <li>• <strong>Réalité</strong> : Ce qui est réellement appliqué au checkout (ex: -3%)</li>
+                    <li>• <strong>Trompeur</strong> : Quand la réalité ne correspond pas à la promesse</li>
+                    <li>• <strong>True Price Authority</strong> : Ces données alimentent la page "Faux Coupons"</li>
+                </ul>
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="text-sm text-yellow-400">
+                        <i className="fas fa-database mr-2"></i>
+                        <strong>Table Supabase requise :</strong> Créez une table <code className="bg-dark-600 px-1 rounded">coupons</code> avec les colonnes:
+                        id, code, vendor, promise, reality, game, source_url, notes, is_fake, created_at
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AlertsPage() {
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Toutes les alertes</h1>
+                    <p className="text-gray-500">{recentAlerts.length} alertes récentes</p>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {recentAlerts.map(alert => (
+                    <div key={alert.id} className={`glass rounded-xl border p-4 ${
+                        alert.severity === 'high' ? 'border-red-500/50' :
+                        alert.severity === 'medium' ? 'border-yellow-500/50' :
+                        'border-dark-600'
+                    }`}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-4">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                    alert.type === 'price_drop' ? 'bg-green-500/20 text-green-400' :
+                                    alert.type === 'new_feature' ? 'bg-purple-500/20 text-purple-400' :
+                                    alert.type === 'sitemap' ? 'bg-blue-500/20 text-blue-400' :
+                                    alert.type === 'promo' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    alert.type === 'seo' ? 'bg-orange-500/20 text-orange-400' :
+                                    'bg-gray-500/20 text-gray-400'
+                                }`}>
+                                    <i className={`fas ${
+                                        alert.type === 'price_drop' ? 'fa-arrow-down' :
+                                        alert.type === 'new_feature' ? 'fa-star' :
+                                        alert.type === 'sitemap' ? 'fa-sitemap' :
+                                        alert.type === 'promo' ? 'fa-tag' :
+                                        alert.type === 'seo' ? 'fa-search' :
+                                        'fa-bell'
+                                    }`}></i>
+                                </div>
+                                <div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <span className="font-semibold">{alert.competitor}</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs ${
+                                            alert.severity === 'high' ? 'bg-red-500/20 text-red-400' :
+                                            alert.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            'bg-gray-500/20 text-gray-400'
+                                        }`}>{alert.severity}</span>
+                                    </div>
+                                    <p className="text-gray-300">{alert.message}</p>
+                                    {alert.game && <p className="text-sm text-accent-blue mt-1"><i className="fas fa-gamepad mr-1"></i>{alert.game}</p>}
+                                </div>
+                            </div>
+                            <span className="text-sm text-gray-500">{alert.time}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function SettingsPage() {
+    const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('ci_discord_webhook') || '');
+    const [discordEnabled, setDiscordEnabled] = useState(() => localStorage.getItem('ci_discord_enabled') === 'true');
+    const [testStatus, setTestStatus] = useState('idle'); // idle, sending, success, error
+    const [testError, setTestError] = useState('');
+
+    // Sauvegarder les settings
+    useEffect(() => {
+        localStorage.setItem('ci_discord_webhook', webhookUrl);
+        localStorage.setItem('ci_discord_enabled', discordEnabled.toString());
+    }, [webhookUrl, discordEnabled]);
+
+    // Envoyer un vrai message Discord
+    const sendTestMessage = async () => {
+        if (!webhookUrl || !webhookUrl.includes('discord.com/api/webhooks')) {
+            setTestStatus('error');
+            setTestError('URL webhook invalide');
+            setTimeout(() => setTestStatus('idle'), 3000);
+            return;
+        }
+
+        setTestStatus('sending');
+        setTestError('');
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'CI War Room',
+                    avatar_url: 'https://cdn-icons-png.flaticon.com/512/2111/2111370.png',
+                    embeds: [{
+                        title: '🎯 Test CI War Room',
+                        description: 'Connexion réussie ! Les alertes seront envoyées sur ce canal.',
+                        color: 0x5865F2,
+                        fields: [
+                            { name: '📊 Status', value: 'Connecté', inline: true },
+                            { name: '⏰ Date', value: new Date().toLocaleString('fr-FR'), inline: true }
+                        ],
+                        footer: { text: 'CI War Room - Gaming Keys Intelligence' }
+                    }]
+                })
+            });
+
+            if (response.ok || response.status === 204) {
+                setTestStatus('success');
+                setTimeout(() => setTestStatus('idle'), 3000);
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            setTestStatus('error');
+            setTestError(error.message || 'Erreur de connexion');
+            setTimeout(() => setTestStatus('idle'), 5000);
+        }
+    };
+
+    return (
+        <div>
+            <h1 className="text-2xl font-bold mb-6">Paramètres</h1>
+            <div className="space-y-6">
+                {/* Discord Integration */}
+                <div className="glass rounded-xl border border-purple-500/30 p-4 bg-purple-500/5">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-semibold flex items-center">
+                            <i className="fab fa-discord text-purple-400 mr-2 text-xl"></i>
+                            Intégration Discord
+                        </h2>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={discordEnabled} onChange={() => setDiscordEnabled(!discordEnabled)} className="sr-only peer" />
+                            <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                        </label>
+                    </div>
+
+                    {discordEnabled && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">Webhook URL</label>
+                                <input
+                                    type="text"
+                                    value={webhookUrl}
+                                    onChange={(e) => setWebhookUrl(e.target.value)}
+                                    placeholder="https://discord.com/api/webhooks/..."
+                                    className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm placeholder-gray-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Alertes critiques</div>
+                                        <div className="text-xs text-gray-500">Nouvelles menaces, prix cassés</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Status changes</div>
+                                        <div className="text-xs text-gray-500">Services down/up</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Price drops</div>
+                                        <div className="text-xs text-gray-500">Baisses de prix &gt;10%</div>
+                                    </div>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 bg-dark-700 rounded-lg cursor-pointer hover:bg-dark-600">
+                                    <input type="checkbox" className="w-4 h-4 accent-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium">Daily report</div>
+                                        <div className="text-xs text-gray-500">Résumé quotidien 9h</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <button
+                                onClick={sendTestMessage}
+                                disabled={!webhookUrl || testStatus === 'sending'}
+                                className={`w-full py-2 rounded-lg font-medium transition flex items-center justify-center space-x-2 ${
+                                    !webhookUrl ? 'bg-dark-600 text-gray-500 cursor-not-allowed' :
+                                    testStatus === 'sending' ? 'bg-gray-600 cursor-wait' :
+                                    testStatus === 'success' ? 'bg-green-500 text-white' :
+                                    testStatus === 'error' ? 'bg-red-500 text-white' :
+                                    'bg-purple-500 hover:bg-purple-600 text-white'
+                                }`}
+                            >
+                                {testStatus === 'sending' ? (
+                                    <><i className="fas fa-spinner fa-spin"></i><span>Envoi...</span></>
+                                ) : testStatus === 'success' ? (
+                                    <><i className="fas fa-check"></i><span>Message envoyé!</span></>
+                                ) : testStatus === 'error' ? (
+                                    <><i className="fas fa-times"></i><span>{testError || 'Erreur'}</span></>
+                                ) : (
+                                    <><i className="fab fa-discord"></i><span>Envoyer un message test</span></>
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    {!discordEnabled && (
+                        <p className="text-sm text-gray-500">Activez pour recevoir les alertes sur votre serveur Discord</p>
+                    )}
+                </div>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-bell mr-2"></i>Notifications</h2>
+                    <div className="space-y-3">
+                        {[
+                            { label: 'Alertes prix (baisse > 10%)', checked: true },
+                            { label: 'Nouvelles pages sitemap (> 100/jour)', checked: true },
+                            { label: 'Nouvelles promos concurrents', checked: true },
+                            { label: 'Changements SEO majeurs', checked: false },
+                            { label: 'Services offline/online', checked: true },
+                            { label: 'Pages 404 détectées', checked: true },
+                        ].map((item, i) => (
+                            <label key={i} className="flex items-center justify-between p-2 rounded hover:bg-dark-700 cursor-pointer">
+                                <span className="text-sm">{item.label}</span>
+                                <input type="checkbox" defaultChecked={item.checked} className="w-4 h-4 accent-accent-blue" />
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-clock mr-2"></i>Fréquence des scans</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Sitemap Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                                <option>Quotidien</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Status Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les 15 minutes</option>
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Price Checker</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Toutes les heures</option>
+                                <option>Toutes les 6 heures</option>
+                                <option>Quotidien</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Discord Reports</label>
+                            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2">
+                                <option>Temps réel</option>
+                                <option>Digest horaire</option>
+                                <option>Digest quotidien</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <h2 className="font-semibold mb-4"><i className="fas fa-server mr-2"></i>API & Webhooks</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">API Key (pour intégrations externes)</label>
+                            <div className="flex space-x-2">
+                                <input type="text" value="ci_live_************************" readOnly className="flex-1 bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm font-mono" />
+                                <button className="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg text-sm"><i className="fas fa-copy"></i></button>
+                                <button className="px-4 py-2 bg-accent-blue hover:bg-blue-600 rounded-lg text-sm">Régénérer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

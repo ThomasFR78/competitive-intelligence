@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 300px;
+            padding: 16px;
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            margin: 0;
+        }
+
+        h2 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .status.connected {
+            background: rgba(0, 217, 160, 0.2);
+            border: 1px solid #00d9a0;
+            color: #00d9a0;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .help {
+            font-size: 12px;
+            color: #a0a0b8;
+            line-height: 1.6;
+        }
+
+        .help strong {
+            color: #fff;
+        }
+
+        .shortcut {
+            display: inline-block;
+            background: #252542;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            border: 1px solid #3a3a5c;
+        }
+
+        a {
+            color: #6c5ce7;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>💰 Price Tracker</h2>
+    <div class="status" id="status">Vérification...</div>
+    <div class="help">
+        <p><strong>Comment utiliser :</strong></p>
+        <p>• Sélectionne un prix → <strong>Clic droit</strong> → "Capturer ce prix"</p>
+        <p>• Ou utilise <span class="shortcut">Ctrl+Shift+P</span></p>
+        <p>• Sur une page d'offre → <strong>Clic droit</strong> → "Ajouter comme offre"</p>
+        <br>
+        <p><a href="http://localhost:3000" target="_blank">📊 Ouvrir le dashboard</a></p>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,259 @@
+/* Price Tracker Extension Styles */
+
+.pt-popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 380px;
+    background: #1a1a2e;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 2147483647;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #fff;
+    border: 1px solid #3a3a5c;
+    animation: pt-slide-in 0.3s ease;
+}
+
+@keyframes pt-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pt-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #3a3a5c;
+    background: linear-gradient(135deg, #252542 0%, #1a1a2e 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.pt-popup-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pt-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.pt-close:hover {
+    color: #fff;
+}
+
+.pt-popup-body {
+    padding: 20px;
+}
+
+.pt-selected {
+    background: #252542;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-style: italic;
+    color: #a0a0ff;
+    border-left: 3px solid #6c5ce7;
+}
+
+.pt-field {
+    margin-bottom: 16px;
+}
+
+.pt-field label {
+    display: block;
+    font-size: 13px;
+    color: #a0a0b8;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.pt-field input,
+.pt-field select {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0f0f1a;
+    border: 1px solid #3a3a5c;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.pt-field input:focus,
+.pt-field select:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.3);
+}
+
+.pt-field input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+/* Radio Buttons as Pills */
+.pt-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pt-radio-pill {
+    display: inline-flex;
+    cursor: pointer;
+    margin: 0;
+}
+
+.pt-radio-pill input[type="radio"] {
+    display: none;
+}
+
+.pt-radio-pill span {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #0f0f1a;
+    border: 1px solid #3a3a5c;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #a0a0b8;
+    transition: all 0.2s ease;
+}
+
+.pt-radio-pill:hover span {
+    border-color: #6c5ce7;
+    color: #fff;
+}
+
+.pt-radio-pill input[type="radio"]:checked+span {
+    background: linear-gradient(135deg, #6c5ce7 0%, #8b7cf7 100%);
+    border-color: #6c5ce7;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
+}
+
+.pt-screenshot-preview {
+    display: block;
+    max-width: 100%;
+    max-height: 120px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid #3a3a5c;
+}
+
+.pt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #3a3a5c;
+}
+
+.pt-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.pt-section-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c5ce7;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.pt-btn-primary {
+    background: linear-gradient(135deg, #6c5ce7 0%, #8b7cf7 100%);
+    color: white;
+}
+
+.pt-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.4);
+}
+
+.pt-btn-secondary {
+    background: #252542;
+    color: #a0a0b8;
+    border: 1px solid #3a3a5c;
+}
+
+.pt-btn-secondary:hover {
+    background: #3a3a5c;
+    color: #fff;
+}
+
+/* Notification */
+.pt-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 2147483647;
+    animation: pt-slide-up 0.3s ease;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@keyframes pt-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pt-notification-hide {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.pt-notification-success {
+    background: linear-gradient(135deg, #00b894 0%, #00d9a0 100%);
+    color: white;
+}
+
+.pt-notification-error {
+    background: linear-gradient(135deg, #d63031 0%, #ff6b6b 100%);
+    color: white;
+}
+
+.pt-notification-warning {
+    background: linear-gradient(135deg, #fdcb6e 0%, #ffeaa7 100%);
+    color: #2d3436;
+}
+
+.pt-notification-info {
+    background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
+    color: white;
+}
