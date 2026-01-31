@@ -38,14 +38,20 @@ export default async function handler(req, res) {
         const responseTime = Date.now() - startTime;
         const text = await response.text();
 
-        // Check for empty WordPress pages
-        const isEmptyWordPress = text.includes('No posts found') ||
-                                 text.includes('Nothing Found') ||
-                                 text.includes('no-results') ||
-                                 (text.length < 1000 && text.includes('WordPress'));
+        // Check for empty WordPress pages (only if page is small)
+        const isEmptyWordPress = text.length < 5000 && (
+            text.includes('No posts found') ||
+            text.includes('Nothing Found') ||
+            text.includes('no-results') ||
+            text.includes('WordPress')
+        );
 
-        // Check for error pages
-        const isErrorPage = text.includes('404') && (text.includes('not found') || text.includes('Page not found'));
+        // Check for error pages (only if page is small - real 404s are usually short)
+        const isErrorPage = text.length < 10000 && text.includes('404') && (
+            text.includes('not found') ||
+            text.includes('Page not found') ||
+            text.includes('page introuvable')
+        );
 
         let status;
         let error = null;
