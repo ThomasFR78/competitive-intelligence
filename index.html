@@ -1393,11 +1393,14 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
             const [offersData, checksData] = await Promise.all([offersRes.json(), checksRes.json()]);
 
             // Associer les checks aux offers (conversion en Number pour éviter mismatch string/number)
+            // DEPLOY_CHECK_V3: Ce code doit s'afficher si le déploiement est à jour
+            console.log('🚀 DEPLOY_CHECK_V3: Number() fix is active!', { offersCount: offersData.length, checksCount: checksData.length });
             const offersWithHistory = offersData.map(offer => ({
                 ...offer,
                 history: checksData.filter(c => Number(c.offer_id) === Number(offer.id)),
                 lastCheck: checksData.find(c => Number(c.offer_id) === Number(offer.id))
             }));
+            console.log('🔗 Offers with history:', offersWithHistory.map(o => ({ id: o.id, name: o.game_name, hasLastCheck: !!o.lastCheck })));
             setOffers(offersWithHistory);
 
             // Sélectionner le premier jeu si aucun sélectionné
