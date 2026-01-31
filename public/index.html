@@ -134,8 +134,35 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
     : 'https://competitive-intelligence-pearl.vercel.app';
 
+// Check if demo mode is enabled
+function isDemoMode() {
+    return localStorage.getItem('ci_demo_mode') === 'true';
+}
+
+// Sample demo data for News Checker
+const demoNews = [
+    { id: 'demo-1', source: 'GG.deals', logo: '🟢', title: '[DEMO] Steam Winter Sale 2026 - Meilleures offres', url: 'https://gg.deals/news/', description: 'Les meilleures réductions de la vente d\'hiver Steam', category: 'sale', publishedAt: new Date().toISOString() },
+    { id: 'demo-2', source: 'AllKeyShop', logo: '🔵', title: '[DEMO] Top 10 Jeux PS5 moins chers', url: 'https://allkeyshop.com/', description: 'Comparaison des prix pour les hits PS5', category: 'comparison', publishedAt: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'demo-3', source: 'IsThereAnyDeal', logo: '🟡', title: '[DEMO] Humble Bundle Choice Février 2026', url: 'https://isthereanydeal.com/', description: 'Analyse du nouveau bundle mensuel', category: 'bundle', publishedAt: new Date(Date.now() - 172800000).toISOString() },
+    { id: 'demo-4', source: 'GG.deals', logo: '🟢', title: '[DEMO] EA Play rejoint le Game Pass', url: 'https://gg.deals/news/', description: 'Nouvelle intégration entre services', category: 'news', publishedAt: new Date(Date.now() - 259200000).toISOString() },
+    { id: 'demo-5', source: 'AllKeyShop', logo: '🔵', title: '[DEMO] Guide: Eviter les arnaques sur les marketplaces', url: 'https://allkeyshop.com/', description: 'Conseils pour acheter en sécurité', category: 'guide', publishedAt: new Date(Date.now() - 345600000).toISOString() },
+];
+
+// Sample demo data for Feature Tracker
+const demoFeatures = [
+    { id: 'demo-f1', title: '[DEMO] GG.deals lance un comparateur de bundles', description: 'Nouveau système pour comparer les bundles', status: 'released', announcedAt: '2026-01-30', impact: 'high', source: 'GG.deals' },
+    { id: 'demo-f2', title: '[DEMO] AllKeyShop: Nouveau système de cashback', description: 'Programme de fidélité étendu', status: 'beta', announcedAt: '2026-01-28', impact: 'medium', source: 'AllKeyShop' },
+    { id: 'demo-f3', title: '[DEMO] DLCompare refonte mobile', description: 'Application mobile totalement redessinée', status: 'announced', announcedAt: '2026-01-25', impact: 'high', source: 'DLCompare' },
+    { id: 'demo-f4', title: '[DEMO] IsThereAnyDeal: Intégration GOG Galaxy', description: 'Sync wishlist avec GOG Galaxy', status: 'in-progress', announcedAt: '2026-01-20', impact: 'medium', source: 'IsThereAnyDeal' },
+];
+
 // Fetch real news from RSS API
 async function fetchNewsFeeds() {
+    // Return demo data if demo mode is enabled
+    if (isDemoMode()) {
+        return demoNews;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/api/news-rss`);
         if (response.ok) {
@@ -150,6 +177,11 @@ async function fetchNewsFeeds() {
 
 // Fetch real Discord announcements
 async function fetchDiscordFeatures() {
+    // Return demo data if demo mode is enabled
+    if (isDemoMode()) {
+        return demoFeatures;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/api/discord-feed`);
         if (response.ok) {
@@ -3053,6 +3085,73 @@ function SettingsPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Data Mode Toggle */}
+                <DataModeToggle />
+            </div>
+        </div>
+    );
+}
+
+// Composant Toggle Mode Démo/Réel
+function DataModeToggle() {
+    const [demoMode, setDemoMode] = useState(() => localStorage.getItem('ci_demo_mode') === 'true');
+
+    const toggleMode = () => {
+        const newMode = !demoMode;
+        setDemoMode(newMode);
+        localStorage.setItem('ci_demo_mode', newMode.toString());
+        // Recharger la page pour appliquer les changements
+        window.location.reload();
+    };
+
+    const clearAllData = () => {
+        if (confirm('Effacer toutes les données locales ? (comparateurs, marchands, alertes, scans...)')) {
+            const keysToRemove = ['ci_comparators', 'ci_merchants', 'ci_dismissed_alerts', 'ci_sitemap_data', 'ci_discord_webhook', 'ci_discord_enabled'];
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            window.location.reload();
+        }
+    };
+
+    return (
+        <div className="glass rounded-xl border border-orange-500/30 p-4 bg-orange-500/5">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold flex items-center">
+                    <i className="fas fa-flask text-orange-400 mr-2"></i>
+                    Mode de données
+                </h2>
+                <div className="flex items-center space-x-3">
+                    <span className={`text-sm ${!demoMode ? 'text-green-400 font-semibold' : 'text-gray-500'}`}>Réel</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={demoMode} onChange={toggleMode} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-green-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                    <span className={`text-sm ${demoMode ? 'text-orange-400 font-semibold' : 'text-gray-500'}`}>Démo</span>
+                </div>
+            </div>
+
+            <div className="text-sm text-gray-400 space-y-2 mb-4">
+                {demoMode ? (
+                    <div className="flex items-center text-orange-400">
+                        <i className="fas fa-info-circle mr-2"></i>
+                        Mode démo actif : News Checker et Feature Tracker utilisent des données de test
+                    </div>
+                ) : (
+                    <div className="flex items-center text-green-400">
+                        <i className="fas fa-check-circle mr-2"></i>
+                        Mode réel : Données en direct depuis les APIs (Discord, RSS)
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center space-x-3">
+                <button
+                    onClick={clearAllData}
+                    className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition text-sm"
+                >
+                    <i className="fas fa-trash-alt mr-2"></i>
+                    Effacer toutes les données locales
+                </button>
             </div>
         </div>
     );
