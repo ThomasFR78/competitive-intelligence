@@ -302,6 +302,7 @@ function App() {
                 {currentPage === 'merchants' && <MerchantsPage />}
                 {currentPage === 'sitemap' && <SitemapChecker />}
                 {currentPage === 'price-tracker' && <PriceTrackerPage />}
+                {currentPage === 'coupon-tracker' && <CouponTrackerPage />}
                 {currentPage === 'prices' && <PriceChecker selectedGame={selectedGame} setSelectedGame={setSelectedGame} />}
                 {currentPage === 'status' && <StatusChecker />}
                 {currentPage === 'alerts' && <AlertsPage />}
@@ -324,6 +325,7 @@ function Sidebar({ currentPage, setCurrentPage }) {
         { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
         { id: 'price-tracker', label: 'Relevés Prix', icon: 'fa-clipboard-check', badge: null },
+        { id: 'coupon-tracker', label: 'Relevés Coupons', icon: 'fa-ticket-alt', badge: null },
         { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
         { id: 'status', label: 'Status Checker', icon: 'fa-heartbeat', badge: alertCount > 0 ? alertCount : null },
         { id: 'alerts', label: 'Alertes', icon: 'fa-bell', badge: recentAlerts.filter(a => a.severity === 'high').length },
@@ -1669,6 +1671,317 @@ function PriceTrackerPage() {
                     <li>• <strong>Mettre à jour</strong> : Clic droit sur le prix checkout → "Update offer price"</li>
                     <li>• <strong>Données</strong> : Stockées dans Supabase, synchronisées ici</li>
                 </ul>
+            </div>
+        </div>
+    );
+}
+
+// ===== COUPON TRACKER - Tracking codes promo =====
+function CouponTrackerPage() {
+    const [coupons, setCoupons] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newCoupon, setNewCoupon] = useState({
+        code: '', vendor: '', promise: '', reality: '', game: '', source_url: '', notes: ''
+    });
+    const [supabaseConfig, setSupabaseConfig] = useState(() => {
+        const saved = localStorage.getItem('ci_supabase_config');
+        if (saved) try { return JSON.parse(saved); } catch(e) {}
+        return {
+            url: 'https://ngzvurmhqnanoghjyswh.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nenZ1cm1ocW5hbm9naGp5c3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1OTc2MTIsImV4cCI6MjA4NDE3MzYxMn0.Sk9M-tUkZY5p0OPw7xT0UOaIgOR3SQRACSVyi_TL61Q'
+        };
+    });
+
+    // Charger les coupons depuis Supabase
+    const loadCoupons = async () => {
+        if (!supabaseConfig.url || !supabaseConfig.key) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${supabaseConfig.url}/rest/v1/coupons?select=*&order=created_at.desc`, {
+                headers: { 'apikey': supabaseConfig.key, 'Authorization': `Bearer ${supabaseConfig.key}` }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setCoupons(await res.json());
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Ajouter un coupon
+    const addCoupon = async () => {
+        if (!newCoupon.code || !newCoupon.vendor) {
+            setError('Code et vendeur requis');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`${supabaseConfig.url}/rest/v1/coupons`, {
+                method: 'POST',
+                headers: {
+                    'apikey': supabaseConfig.key,
+                    'Authorization': `Bearer ${supabaseConfig.key}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    code: newCoupon.code,
+                    vendor: newCoupon.vendor,
+                    promise: newCoupon.promise,
+                    reality: newCoupon.reality,
+                    game: newCoupon.game || null,
+                    source_url: newCoupon.source_url || null,
+                    notes: newCoupon.notes || null,
+                    is_fake: newCoupon.reality && newCoupon.promise !== newCoupon.reality
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setShowAddForm(false);
+            setNewCoupon({ code: '', vendor: '', promise: '', reality: '', game: '', source_url: '', notes: '' });
+            loadCoupons();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Charger au mount
+    useEffect(() => { loadCoupons(); }, []);
+
+    // Stats
+    const fakeCoupons = coupons.filter(c => c.is_fake);
+    const vendors = [...new Set(coupons.map(c => c.vendor))];
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Relevés de Coupons</h1>
+                    <p className="text-gray-500">Vérification des codes promo et réductions</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className="px-4 py-2 bg-accent-purple hover:bg-purple-600 rounded-lg font-medium transition flex items-center space-x-2"
+                    >
+                        <i className="fas fa-plus"></i>
+                        <span>Ajouter coupon</span>
+                    </button>
+                    <button
+                        onClick={loadCoupons}
+                        disabled={loading}
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2 ${
+                            loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-green hover:bg-green-600'
+                        }`}
+                    >
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i><span>Chargement...</span></> : <><i className="fas fa-sync-alt"></i><span>Actualiser</span></>}
+                    </button>
+                </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+                <div className="glass rounded-xl border border-red-500/50 p-4 mb-6 bg-red-500/10">
+                    <p className="text-red-400"><i className="fas fa-exclamation-triangle mr-2"></i>{error}</p>
+                </div>
+            )}
+
+            {/* Add form */}
+            {showAddForm && (
+                <div className="glass rounded-xl border border-accent-purple/50 p-4 mb-6 bg-accent-purple/5">
+                    <h3 className="font-semibold mb-4 flex items-center">
+                        <i className="fas fa-ticket-alt text-accent-purple mr-2"></i>
+                        Ajouter un relevé de coupon
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Code promo *</label>
+                            <input
+                                type="text"
+                                value={newCoupon.code}
+                                onChange={(e) => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})}
+                                placeholder="SAVE10"
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 font-mono"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Vendeur *</label>
+                            <input
+                                type="text"
+                                value={newCoupon.vendor}
+                                onChange={(e) => setNewCoupon({...newCoupon, vendor: e.target.value})}
+                                placeholder="CDKeys, G2A..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Applicable sur (jeu)</label>
+                            <input
+                                type="text"
+                                value={newCoupon.game}
+                                onChange={(e) => setNewCoupon({...newCoupon, game: e.target.value})}
+                                placeholder="Tout, EA FC 25..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Promesse affichée</label>
+                            <input
+                                type="text"
+                                value={newCoupon.promise}
+                                onChange={(e) => setNewCoupon({...newCoupon, promise: e.target.value})}
+                                placeholder="-10%, -5€..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Réalité constatée</label>
+                            <input
+                                type="text"
+                                value={newCoupon.reality}
+                                onChange={(e) => setNewCoupon({...newCoupon, reality: e.target.value})}
+                                placeholder="-3%, Expiré..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">URL source</label>
+                            <input
+                                type="url"
+                                value={newCoupon.source_url}
+                                onChange={(e) => setNewCoupon({...newCoupon, source_url: e.target.value})}
+                                placeholder="https://..."
+                                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm"
+                            />
+                        </div>
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm text-gray-400 mb-2">Notes</label>
+                        <textarea
+                            value={newCoupon.notes}
+                            onChange={(e) => setNewCoupon({...newCoupon, notes: e.target.value})}
+                            placeholder="Conditions non mentionnées, minimum d'achat caché..."
+                            className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-sm h-20"
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            Si "Réalité" diffère de "Promesse", le coupon sera marqué comme trompeur
+                        </p>
+                        <div className="flex space-x-2">
+                            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-dark-600 hover:bg-dark-500 rounded-lg">
+                                Annuler
+                            </button>
+                            <button onClick={addCoupon} disabled={loading} className="px-4 py-2 bg-accent-purple hover:bg-purple-600 rounded-lg">
+                                <i className="fas fa-save mr-2"></i>Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stats */}
+            {coupons.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Coupons suivis</div>
+                        <div className="text-2xl font-bold">{coupons.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-dark-600 p-4">
+                        <div className="text-sm text-gray-500 mb-1">Vendeurs</div>
+                        <div className="text-2xl font-bold">{vendors.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-red-500/30 p-4 bg-red-500/5">
+                        <div className="text-sm text-red-400 mb-1"><i className="fas fa-exclamation-triangle mr-1"></i>Trompeurs</div>
+                        <div className="text-2xl font-bold text-red-400">{fakeCoupons.length}</div>
+                    </div>
+                    <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                        <div className="text-sm text-green-400 mb-1"><i className="fas fa-check-circle mr-1"></i>Valides</div>
+                        <div className="text-2xl font-bold text-green-400">{coupons.length - fakeCoupons.length}</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Coupons table */}
+            {coupons.length > 0 ? (
+                <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-dark-700">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Code</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Vendeur</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Promesse</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Réalité</th>
+                                <th className="text-left px-4 py-3 text-sm font-semibold">Applicable sur</th>
+                                <th className="text-center px-4 py-3 text-sm font-semibold">Status</th>
+                                <th className="text-right px-4 py-3 text-sm font-semibold">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dark-600">
+                            {coupons.map(coupon => (
+                                <tr key={coupon.id} className={`hover:bg-dark-700/50 ${coupon.is_fake ? 'bg-red-500/5' : ''}`}>
+                                    <td className="px-4 py-3">
+                                        <code className="px-2 py-1 bg-dark-600 rounded font-mono text-sm">{coupon.code}</code>
+                                    </td>
+                                    <td className="px-4 py-3 font-medium">{coupon.vendor}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className="text-green-400 font-semibold">{coupon.promise || '-'}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className={`font-semibold ${coupon.is_fake ? 'text-red-400' : 'text-green-400'}`}>
+                                            {coupon.reality || coupon.promise || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-400">{coupon.game || 'Tout'}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        {coupon.is_fake ? (
+                                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded font-semibold">
+                                                <i className="fas fa-times mr-1"></i>TROMPEUR
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded font-semibold">
+                                                <i className="fas fa-check mr-1"></i>OK
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-sm text-gray-400">
+                                        {coupon.created_at ? new Date(coupon.created_at).toLocaleDateString('fr-FR') : '-'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : !loading && (
+                <div className="glass rounded-xl border border-dark-600 p-8 text-center">
+                    <i className="fas fa-ticket-alt text-4xl text-gray-600 mb-4"></i>
+                    <p className="text-gray-500">Aucun coupon relevé</p>
+                    <p className="text-sm text-gray-600 mt-2">Cliquez sur "Ajouter coupon" pour enregistrer un relevé</p>
+                </div>
+            )}
+
+            {/* Info */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Comment ça marche</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong>Promesse</strong> : Ce que le comparateur ou le vendeur affiche (ex: -10%)</li>
+                    <li>• <strong>Réalité</strong> : Ce qui est réellement appliqué au checkout (ex: -3%)</li>
+                    <li>• <strong>Trompeur</strong> : Quand la réalité ne correspond pas à la promesse</li>
+                    <li>• <strong>True Price Authority</strong> : Ces données alimentent la page "Faux Coupons"</li>
+                </ul>
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="text-sm text-yellow-400">
+                        <i className="fas fa-database mr-2"></i>
+                        <strong>Table Supabase requise :</strong> Créez une table <code className="bg-dark-600 px-1 rounded">coupons</code> avec les colonnes:
+                        id, code, vendor, promise, reality, game, source_url, notes, is_fake, created_at
+                    </p>
+                </div>
             </div>
         </div>
     );
