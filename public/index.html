@@ -119,16 +119,38 @@ const comparators = [
 ];
 
 const merchants = [
-    { id: 1, name: 'CDKeys', domain: 'cdkeys.com', logo: '🔑', status: 'active', avgPrice: 34.20, reliability: 94, lastPromo: 'WINTER25 -25%', threat: 'medium', inventory: 12453 },
-    { id: 2, name: 'Instant Gaming', domain: 'instant-gaming.com', logo: '⚡', status: 'active', avgPrice: 32.80, reliability: 87, lastPromo: '10% cashback new users', threat: 'high', inventory: 18234 },
-    { id: 3, name: 'G2A', domain: 'g2a.com', logo: '🏪', status: 'active', avgPrice: 29.50, reliability: 58, lastPromo: 'G2A Plus -10%', threat: 'high', inventory: 45678 },
-    { id: 4, name: 'Kinguin', domain: 'kinguin.net', logo: '👑', status: 'active', avgPrice: 31.20, reliability: 42, lastPromo: 'Flash Sale -40%', threat: 'medium', inventory: 23456 },
-    { id: 5, name: 'Eneba', domain: 'eneba.com', logo: '🛒', status: 'active', avgPrice: 30.10, reliability: 71, lastPromo: 'ENEBA5 -5%', threat: 'high', inventory: 34567 },
-    { id: 6, name: 'Fanatical', domain: 'fanatical.com', logo: '🎯', status: 'active', avgPrice: 35.90, reliability: 89, lastPromo: 'Build your bundle', threat: 'low', inventory: 8765 },
-    { id: 7, name: 'Gamesplanet', domain: 'gamesplanet.com', logo: '🌍', status: 'active', avgPrice: 36.50, reliability: 91, lastPromo: 'Weekend deals', threat: 'low', inventory: 6543 },
-    { id: 8, name: 'HRK Game', domain: 'hrkgame.com', logo: '🎮', status: 'active', avgPrice: 28.90, reliability: 65, lastPromo: 'New user -15%', threat: 'low', inventory: 9876 },
-    { id: 9, name: 'Gamivo', domain: 'gamivo.com', logo: '🎪', status: 'active', avgPrice: 27.80, reliability: 68, lastPromo: 'Smart price', threat: 'medium', inventory: 19876 },
-    { id: 10, name: 'Green Man Gaming', domain: 'greenmangaming.com', logo: '🟩', status: 'active', avgPrice: 38.50, reliability: 95, lastPromo: 'VIP -22%', threat: 'low', inventory: 4567 },
+    { id: 1, name: 'CDKeys', domain: 'cdkeys.com', logo: '🔑', status: 'active', reliability: 94, lastPromo: 'WINTER25 -25%', threat: 'medium', inventory: 12453, responseTime: 120, affiliateRate: '5%', paymentMethods: 5, trustpilot: 4.6, foundedYear: 2012 },
+    { id: 2, name: 'Instant Gaming', domain: 'instant-gaming.com', logo: '⚡', status: 'active', reliability: 87, lastPromo: '10% cashback new users', threat: 'high', inventory: 18234, responseTime: 89, affiliateRate: '7%', paymentMethods: 8, trustpilot: 4.5, foundedYear: 2012 },
+    { id: 3, name: 'G2A', domain: 'g2a.com', logo: '🏪', status: 'active', reliability: 58, lastPromo: 'G2A Plus -10%', threat: 'high', inventory: 45678, responseTime: 340, affiliateRate: '10%', paymentMethods: 12, trustpilot: 4.0, foundedYear: 2010 },
+    { id: 4, name: 'Kinguin', domain: 'kinguin.net', logo: '👑', status: 'active', reliability: 42, lastPromo: 'Flash Sale -40%', threat: 'medium', inventory: 23456, responseTime: 450, affiliateRate: '8%', paymentMethods: 6, trustpilot: 3.8, foundedYear: 2013 },
+    { id: 5, name: 'Eneba', domain: 'eneba.com', logo: '🛒', status: 'active', reliability: 71, lastPromo: 'ENEBA5 -5%', threat: 'high', inventory: 34567, responseTime: 156, affiliateRate: '6%', paymentMethods: 10, trustpilot: 4.3, foundedYear: 2018 },
+    { id: 6, name: 'Fanatical', domain: 'fanatical.com', logo: '🎯', status: 'active', reliability: 89, lastPromo: 'Build your bundle', threat: 'low', inventory: 8765, responseTime: 78, affiliateRate: '8%', paymentMethods: 4, trustpilot: 4.7, foundedYear: 2012 },
+    { id: 7, name: 'Gamesplanet', domain: 'gamesplanet.com', logo: '🌍', status: 'active', reliability: 91, lastPromo: 'Weekend deals', threat: 'low', inventory: 6543, responseTime: 95, affiliateRate: '5%', paymentMethods: 5, trustpilot: 4.8, foundedYear: 2006 },
+    { id: 8, name: 'HRK Game', domain: 'hrkgame.com', logo: '🎮', status: 'active', reliability: 65, lastPromo: 'New user -15%', threat: 'low', inventory: 9876, responseTime: 280, affiliateRate: '4%', paymentMethods: 5, trustpilot: 4.1, foundedYear: 2014 },
+    { id: 9, name: 'Gamivo', domain: 'gamivo.com', logo: '🎪', status: 'active', reliability: 68, lastPromo: 'Smart price', threat: 'medium', inventory: 19876, responseTime: 210, affiliateRate: '7%', paymentMethods: 8, trustpilot: 4.2, foundedYear: 2016 },
+    { id: 10, name: 'Green Man Gaming', domain: 'greenmangaming.com', logo: '🟩', status: 'active', reliability: 95, lastPromo: 'VIP -22%', threat: 'low', inventory: 4567, responseTime: 65, affiliateRate: '5%', paymentMethods: 6, trustpilot: 4.6, foundedYear: 2010 },
+];
+
+// ===== NEWS FEED DATA =====
+const newsFeeds = [
+    { id: 1, source: 'GG.deals', title: 'Steam Winter Sale 2025: Best Deals Revealed', url: 'https://gg.deals/news/steam-winter-sale-2025/', publishedAt: '2026-01-30T14:30:00', category: 'sale', views: 12453, discoverScore: 8.5 },
+    { id: 2, source: 'AllKeyShop', title: 'GTA VI Pre-order Prices Compared', url: 'https://blog.allkeyshop.com/gta-vi-preorder/', publishedAt: '2026-01-30T11:00:00', category: 'comparison', views: 8234, discoverScore: 9.2 },
+    { id: 3, source: 'GG.deals', title: 'Humble Choice February 2026 Predictions', url: 'https://gg.deals/news/humble-choice-feb/', publishedAt: '2026-01-29T16:45:00', category: 'bundle', views: 5621, discoverScore: 7.1 },
+    { id: 4, source: 'AllKeyShop', title: 'Top 10 Cheapest AAA Games This Week', url: 'https://blog.allkeyshop.com/cheapest-aaa/', publishedAt: '2026-01-29T09:15:00', category: 'ranking', views: 15234, discoverScore: 8.8 },
+    { id: 5, source: 'GG.deals', title: 'New Feature: Price Alerts v2.0', url: 'https://gg.deals/news/price-alerts-v2/', publishedAt: '2026-01-28T13:00:00', category: 'feature', views: 3421, discoverScore: 6.5 },
+    { id: 6, source: 'AllKeyShop', title: 'EA Play Subscription: Is It Worth It in 2026?', url: 'https://blog.allkeyshop.com/ea-play-2026/', publishedAt: '2026-01-28T10:30:00', category: 'guide', views: 9876, discoverScore: 7.9 },
+    { id: 7, source: 'GG.deals', title: 'Epic Games Store Free Games Schedule', url: 'https://gg.deals/news/epic-free-games/', publishedAt: '2026-01-27T15:00:00', category: 'free', views: 21345, discoverScore: 9.5 },
+    { id: 8, source: 'AllKeyShop', title: 'Cyberpunk 2077 Phantom Liberty Bundle Analysis', url: 'https://blog.allkeyshop.com/cyberpunk-bundle/', publishedAt: '2026-01-27T08:00:00', category: 'analysis', views: 7654, discoverScore: 7.3 },
+];
+
+// ===== DISCORD FEATURE ANNOUNCEMENTS (GG.deals) =====
+const discordFeatures = [
+    { id: 1, title: 'Price History Charts Redesign', description: 'New interactive charts with 90-day history', status: 'released', announcedAt: '2026-01-28', discordLink: 'https://discord.com/channels/ggdeals/1234', impact: 'high' },
+    { id: 2, title: 'Mobile App Beta Launch', description: 'Android app with price alerts and notifications', status: 'beta', announcedAt: '2026-01-25', discordLink: 'https://discord.com/channels/ggdeals/1235', impact: 'critical' },
+    { id: 3, title: 'API v3 Public Access', description: 'Developer API with rate limits and OAuth', status: 'announced', announcedAt: '2026-01-20', discordLink: 'https://discord.com/channels/ggdeals/1236', impact: 'high' },
+    { id: 4, title: 'Wishlist Sync with Steam', description: 'Auto-import wishlists from Steam account', status: 'released', announcedAt: '2026-01-15', discordLink: 'https://discord.com/channels/ggdeals/1237', impact: 'medium' },
+    { id: 5, title: 'DLC Price Tracking', description: 'Track DLC and expansion prices separately', status: 'in-progress', announcedAt: '2026-01-10', discordLink: 'https://discord.com/channels/ggdeals/1238', impact: 'medium' },
+    { id: 6, title: 'Browser Extension v2', description: 'Chrome/Firefox extension with inline prices', status: 'announced', announcedAt: '2026-01-05', discordLink: 'https://discord.com/channels/ggdeals/1239', impact: 'high' },
 ];
 
 // Alertes récentes réalistes
@@ -301,6 +323,8 @@ function App() {
                 {currentPage === 'comparators' && <ComparatorsPage />}
                 {currentPage === 'merchants' && <MerchantsPage />}
                 {currentPage === 'sitemap' && <SitemapChecker />}
+                {currentPage === 'news-checker' && <NewsChecker />}
+                {currentPage === 'feature-checker' && <FeatureChecker />}
                 {currentPage === 'price-tracker' && <PriceTrackerPage />}
                 {currentPage === 'coupon-tracker' && <CouponTrackerPage />}
                 {currentPage === 'prices' && <PriceChecker selectedGame={selectedGame} setSelectedGame={setSelectedGame} />}
@@ -324,6 +348,8 @@ function Sidebar({ currentPage, setCurrentPage }) {
         { id: 'comparators', label: 'Comparateurs', icon: 'fa-balance-scale', count: comparators.length },
         { id: 'merchants', label: 'Marchands', icon: 'fa-store', count: merchants.length },
         { id: 'sitemap', label: 'Sitemap Checker', icon: 'fa-sitemap' },
+        { id: 'news-checker', label: 'News Checker', icon: 'fa-newspaper', badge: newsFeeds.length },
+        { id: 'feature-checker', label: 'Feature Tracker', icon: 'fa-rocket', badge: discordFeatures.filter(f => f.status === 'announced').length },
         { id: 'price-tracker', label: 'Relevés Prix', icon: 'fa-clipboard-check', badge: null },
         { id: 'coupon-tracker', label: 'Relevés Coupons', icon: 'fa-ticket-alt', badge: null },
         { id: 'prices', label: 'Price Checker', icon: 'fa-tags' },
@@ -369,7 +395,22 @@ function Sidebar({ currentPage, setCurrentPage }) {
                 ))}
             </nav>
 
-            <div className="mt-auto pt-4 border-t border-dark-600">
+            <div className="mt-auto pt-4 border-t border-dark-600 space-y-3">
+                {/* Download Addon */}
+                <a
+                    href="/extension/price-tracker-extension.zip"
+                    download
+                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-accent-blue/20 to-purple-500/20 rounded-lg border border-accent-blue/30 hover:border-accent-blue/50 transition group"
+                >
+                    <div className="w-8 h-8 bg-accent-blue/30 rounded-lg flex items-center justify-center group-hover:bg-accent-blue/50 transition">
+                        <i className="fas fa-download text-accent-blue"></i>
+                    </div>
+                    <div>
+                        <div className="text-sm font-medium text-white">Price Tracker Addon</div>
+                        <div className="text-xs text-gray-400">Chrome Extension v1.0</div>
+                    </div>
+                </a>
+
                 <div className="flex items-center space-x-2 px-4 py-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full status-dot"></div>
                     <span className="text-xs text-gray-500">Monitoring actif</span>
@@ -575,6 +616,27 @@ function ComparatorsPage() {
 }
 
 function MerchantsPage() {
+    const [sortBy, setSortBy] = useState('reliability');
+    const [sortDir, setSortDir] = useState('desc');
+
+    const sortedMerchants = [...merchants].sort((a, b) => {
+        const multiplier = sortDir === 'desc' ? -1 : 1;
+        return (a[sortBy] - b[sortBy]) * multiplier;
+    });
+
+    const handleSort = (field) => {
+        if (sortBy === field) {
+            setSortDir(sortDir === 'desc' ? 'asc' : 'desc');
+        } else {
+            setSortBy(field);
+            setSortDir('desc');
+        }
+    };
+
+    const SortIcon = ({ field }) => (
+        <i className={`fas fa-sort${sortBy === field ? (sortDir === 'desc' ? '-down' : '-up') : ''} ml-1 text-xs ${sortBy === field ? 'text-accent-blue' : 'text-gray-600'}`}></i>
+    );
+
     return (
         <div>
             <div className="mb-6">
@@ -582,37 +644,75 @@ function MerchantsPage() {
                 <p className="text-gray-500">{merchants.length} marchands surveillés</p>
             </div>
 
+            {/* Stats summary */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Catalogue total</div>
+                    <div className="text-2xl font-bold">{(merchants.reduce((s,m)=>s+m.inventory,0)/1000).toFixed(0)}K</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Trustpilot moy.</div>
+                    <div className="text-2xl font-bold text-yellow-400">{(merchants.reduce((s,m)=>s+m.trustpilot,0)/merchants.length).toFixed(1)}★</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Réponse moy.</div>
+                    <div className="text-2xl font-bold">{Math.round(merchants.reduce((s,m)=>s+m.responseTime,0)/merchants.length)}ms</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Affiliation moy.</div>
+                    <div className="text-2xl font-bold text-green-400">{(merchants.reduce((s,m)=>s+parseFloat(m.affiliateRate),0)/merchants.length).toFixed(1)}%</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Menaces hautes</div>
+                    <div className="text-2xl font-bold text-red-400">{merchants.filter(m=>m.threat==='high').length}</div>
+                </div>
+            </div>
+
             <div className="glass rounded-xl border border-dark-600 overflow-hidden">
                 <table className="w-full">
                     <thead className="bg-dark-700">
                         <tr>
                             <th className="text-left px-4 py-3 text-sm font-semibold">Marchand</th>
-                            <th className="text-right px-4 py-3 text-sm font-semibold">Prix moy.</th>
-                            <th className="text-center px-4 py-3 text-sm font-semibold">Fiabilité TPA</th>
-                            <th className="text-right px-4 py-3 text-sm font-semibold">Catalogue</th>
-                            <th className="text-left px-4 py-3 text-sm font-semibold">Dernière promo</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold cursor-pointer hover:text-accent-blue" onClick={() => handleSort('trustpilot')}>Trustpilot<SortIcon field="trustpilot" /></th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold cursor-pointer hover:text-accent-blue" onClick={() => handleSort('reliability')}>Fiabilité TPA<SortIcon field="reliability" /></th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold cursor-pointer hover:text-accent-blue" onClick={() => handleSort('responseTime')}>Vitesse<SortIcon field="responseTime" /></th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold cursor-pointer hover:text-accent-blue" onClick={() => handleSort('inventory')}>Catalogue<SortIcon field="inventory" /></th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Affiliation</th>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Promo active</th>
                             <th className="text-center px-4 py-3 text-sm font-semibold">Menace</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-600">
-                        {merchants.map(m => (
+                        {sortedMerchants.map(m => (
                             <tr key={m.id} className="hover:bg-dark-700/50">
                                 <td className="px-4 py-3">
                                     <div className="flex items-center space-x-3">
                                         <span className="text-xl">{m.logo}</span>
                                         <div>
                                             <div className="font-medium">{m.name}</div>
-                                            <div className="text-xs text-gray-500">{m.domain}</div>
+                                            <div className="text-xs text-gray-500">{m.domain} • depuis {m.foundedYear}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-3 text-right font-mono">{m.avgPrice}€</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`font-semibold ${m.trustpilot >= 4.5 ? 'text-green-400' : m.trustpilot >= 4 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {m.trustpilot}★
+                                    </span>
+                                </td>
                                 <td className="px-4 py-3 text-center">
                                     <span className={`font-bold ${m.reliability >= 80 ? 'text-green-400' : m.reliability >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
                                         {m.reliability}%
                                     </span>
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-400">{m.inventory.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`font-mono ${m.responseTime <= 100 ? 'text-green-400' : m.responseTime <= 200 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {m.responseTime}ms
+                                    </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-400 font-mono">{m.inventory.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className="text-green-400 font-semibold">{m.affiliateRate}</span>
+                                </td>
                                 <td className="px-4 py-3">
                                     <span className="text-sm text-yellow-400"><i className="fas fa-tag mr-1"></i>{m.lastPromo}</span>
                                 </td>
@@ -627,6 +727,19 @@ function MerchantsPage() {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Legend */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-info-circle text-accent-blue mr-2"></i>Métriques</h3>
+                <div className="grid grid-cols-3 gap-4 text-sm text-gray-400">
+                    <div><strong>Trustpilot</strong> : Note publique utilisateurs</div>
+                    <div><strong>Fiabilité TPA</strong> : Score basé sur nos relevés de prix</div>
+                    <div><strong>Vitesse</strong> : Temps de réponse API/site moyen</div>
+                    <div><strong>Catalogue</strong> : Nombre de produits actifs</div>
+                    <div><strong>Affiliation</strong> : Commission affilié standard</div>
+                    <div><strong>Menace</strong> : Niveau de concurrence pour nous</div>
+                </div>
             </div>
         </div>
     );
@@ -2040,6 +2153,242 @@ function AlertsPage() {
                         </div>
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+// ===== NEWS CHECKER =====
+function NewsChecker() {
+    const [filter, setFilter] = useState('all');
+    const [sourceFilter, setSourceFilter] = useState('all');
+
+    // Calculer les stats
+    const today = new Date();
+    const todayNews = newsFeeds.filter(n => new Date(n.publishedAt).toDateString() === today.toDateString());
+    const weekNews = newsFeeds.filter(n => (today - new Date(n.publishedAt)) / (1000*60*60*24) < 7);
+
+    const ggdealsNews = newsFeeds.filter(n => n.source === 'GG.deals');
+    const aksNews = newsFeeds.filter(n => n.source === 'AllKeyShop');
+
+    const avgPublicationsPerDay = (weekNews.length / 7).toFixed(1);
+    const avgDiscoverScore = (newsFeeds.reduce((sum, n) => sum + n.discoverScore, 0) / newsFeeds.length).toFixed(1);
+    const totalViews = newsFeeds.reduce((sum, n) => sum + n.views, 0);
+
+    const filteredNews = newsFeeds
+        .filter(n => sourceFilter === 'all' || n.source === sourceFilter)
+        .filter(n => filter === 'all' || n.category === filter);
+
+    const categories = [...new Set(newsFeeds.map(n => n.category))];
+
+    const getCategoryColor = (cat) => {
+        const colors = { sale: 'green', comparison: 'blue', bundle: 'purple', ranking: 'yellow', feature: 'pink', guide: 'orange', free: 'cyan', analysis: 'indigo' };
+        return colors[cat] || 'gray';
+    };
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">News Checker</h1>
+                    <p className="text-gray-500">Veille éditoriale AllKeyShop & GG.deals</p>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-6 gap-4 mb-6">
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Articles/jour</div>
+                    <div className="text-2xl font-bold">{avgPublicationsPerDay}</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Cette semaine</div>
+                    <div className="text-2xl font-bold">{weekNews.length}</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Aujourd'hui</div>
+                    <div className="text-2xl font-bold text-green-400">{todayNews.length}</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Score Discover</div>
+                    <div className="text-2xl font-bold text-yellow-400">{avgDiscoverScore}/10</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Vues totales</div>
+                    <div className="text-2xl font-bold">{(totalViews/1000).toFixed(0)}K</div>
+                </div>
+                <div className="glass rounded-xl border border-dark-600 p-4">
+                    <div className="text-sm text-gray-500 mb-1">Sources actives</div>
+                    <div className="text-2xl font-bold">2</div>
+                </div>
+            </div>
+
+            {/* Source comparison */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold">🔵 AllKeyShop Blog</span>
+                        <span className="text-sm text-gray-400">{aksNews.length} articles</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div><div className="text-lg font-bold">{(aksNews.reduce((s,n)=>s+n.views,0)/aksNews.length/1000).toFixed(1)}K</div><div className="text-gray-500">Vues/article</div></div>
+                        <div><div className="text-lg font-bold">{(aksNews.reduce((s,n)=>s+n.discoverScore,0)/aksNews.length).toFixed(1)}</div><div className="text-gray-500">Discover</div></div>
+                        <div><div className="text-lg font-bold">{aksNews.filter(n=>n.category==='comparison').length}</div><div className="text-gray-500">Comparatifs</div></div>
+                    </div>
+                </div>
+                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold">🟢 GG.deals News</span>
+                        <span className="text-sm text-gray-400">{ggdealsNews.length} articles</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div><div className="text-lg font-bold">{(ggdealsNews.reduce((s,n)=>s+n.views,0)/ggdealsNews.length/1000).toFixed(1)}K</div><div className="text-gray-500">Vues/article</div></div>
+                        <div><div className="text-lg font-bold">{(ggdealsNews.reduce((s,n)=>s+n.discoverScore,0)/ggdealsNews.length).toFixed(1)}</div><div className="text-gray-500">Discover</div></div>
+                        <div><div className="text-lg font-bold">{ggdealsNews.filter(n=>n.category==='sale').length}</div><div className="text-gray-500">Sales</div></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex space-x-4 mb-4">
+                <div className="flex space-x-2">
+                    {['all', 'GG.deals', 'AllKeyShop'].map(src => (
+                        <button key={src} onClick={() => setSourceFilter(src)} className={`px-3 py-1 rounded-lg text-sm ${sourceFilter === src ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>
+                            {src === 'all' ? 'Toutes sources' : src}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex space-x-2">
+                    <button onClick={() => setFilter('all')} className={`px-3 py-1 rounded-lg text-sm ${filter === 'all' ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>Tous</button>
+                    {categories.map(cat => (
+                        <button key={cat} onClick={() => setFilter(cat)} className={`px-3 py-1 rounded-lg text-sm ${filter === cat ? 'bg-accent-blue' : 'bg-dark-700 hover:bg-dark-600'}`}>{cat}</button>
+                    ))}
+                </div>
+            </div>
+
+            {/* News list */}
+            <div className="glass rounded-xl border border-dark-600 overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-dark-700">
+                        <tr>
+                            <th className="text-left px-4 py-3 text-sm font-semibold">Article</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Source</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Catégorie</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Vues</th>
+                            <th className="text-center px-4 py-3 text-sm font-semibold">Discover</th>
+                            <th className="text-right px-4 py-3 text-sm font-semibold">Publié</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-dark-600">
+                        {filteredNews.map(news => (
+                            <tr key={news.id} className="hover:bg-dark-700/50">
+                                <td className="px-4 py-3">
+                                    <a href={news.url} target="_blank" className="font-medium hover:text-accent-blue">{news.title}</a>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded text-xs ${news.source === 'GG.deals' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>{news.source}</span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 rounded text-xs bg-${getCategoryColor(news.category)}-500/20 text-${getCategoryColor(news.category)}-400`}>{news.category}</span>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono">{(news.views/1000).toFixed(1)}K</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`font-semibold ${news.discoverScore >= 8 ? 'text-green-400' : news.discoverScore >= 6 ? 'text-yellow-400' : 'text-gray-400'}`}>{news.discoverScore}</span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-400">
+                                    {new Date(news.publishedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+// ===== FEATURE CHECKER (GG.deals Discord) =====
+function FeatureChecker() {
+    const getStatusColor = (status) => {
+        const colors = { released: 'green', beta: 'yellow', 'in-progress': 'blue', announced: 'purple' };
+        return colors[status] || 'gray';
+    };
+    const getImpactColor = (impact) => {
+        const colors = { critical: 'red', high: 'orange', medium: 'yellow', low: 'gray' };
+        return colors[impact] || 'gray';
+    };
+
+    const releasedCount = discordFeatures.filter(f => f.status === 'released').length;
+    const betaCount = discordFeatures.filter(f => f.status === 'beta').length;
+    const announcedCount = discordFeatures.filter(f => f.status === 'announced').length;
+    const inProgressCount = discordFeatures.filter(f => f.status === 'in-progress').length;
+
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Feature Tracker</h1>
+                    <p className="text-gray-500">Suivi des annonces Discord GG.deals</p>
+                </div>
+                <a href="https://discord.gg/ggdeals" target="_blank" className="px-4 py-2 bg-purple-500 rounded-lg font-medium hover:bg-purple-600 transition flex items-center space-x-2">
+                    <i className="fab fa-discord"></i>
+                    <span>Rejoindre le Discord</span>
+                </a>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="glass rounded-xl border border-green-500/30 p-4 bg-green-500/5">
+                    <div className="text-sm text-green-400 mb-1">Released</div>
+                    <div className="text-2xl font-bold text-green-400">{releasedCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-yellow-500/30 p-4 bg-yellow-500/5">
+                    <div className="text-sm text-yellow-400 mb-1">Beta</div>
+                    <div className="text-2xl font-bold text-yellow-400">{betaCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-blue-500/30 p-4 bg-blue-500/5">
+                    <div className="text-sm text-blue-400 mb-1">In Progress</div>
+                    <div className="text-2xl font-bold text-blue-400">{inProgressCount}</div>
+                </div>
+                <div className="glass rounded-xl border border-purple-500/30 p-4 bg-purple-500/5">
+                    <div className="text-sm text-purple-400 mb-1">Announced</div>
+                    <div className="text-2xl font-bold text-purple-400">{announcedCount}</div>
+                </div>
+            </div>
+
+            {/* Features timeline */}
+            <div className="glass rounded-xl border border-dark-600 p-4">
+                <h2 className="font-semibold mb-4"><i className="fas fa-stream mr-2 text-accent-blue"></i>Timeline des annonces</h2>
+                <div className="space-y-4">
+                    {discordFeatures.map(feature => (
+                        <div key={feature.id} className={`p-4 rounded-lg border-l-4 bg-dark-700/50 border-${getStatusColor(feature.status)}-500`}>
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-3 mb-2">
+                                        <span className="font-semibold text-lg">{feature.title}</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs bg-${getStatusColor(feature.status)}-500/20 text-${getStatusColor(feature.status)}-400`}>{feature.status}</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs bg-${getImpactColor(feature.impact)}-500/20 text-${getImpactColor(feature.impact)}-400`}>Impact: {feature.impact}</span>
+                                    </div>
+                                    <p className="text-gray-400 mb-2">{feature.description}</p>
+                                    <div className="flex items-center space-x-4 text-sm">
+                                        <span className="text-gray-500"><i className="fas fa-calendar mr-1"></i>{new Date(feature.announcedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                        <a href={feature.discordLink} target="_blank" className="text-purple-400 hover:underline"><i className="fab fa-discord mr-1"></i>Voir l'annonce</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* What to watch */}
+            <div className="glass rounded-xl border border-dark-600 p-4 mt-6">
+                <h3 className="font-semibold mb-3"><i className="fas fa-lightbulb text-yellow-400 mr-2"></i>Opportunités détectées</h3>
+                <ul className="text-sm text-gray-400 space-y-2">
+                    <li>• <strong className="text-red-400">Mobile App</strong> : GG.deals lance une app mobile - nous devons réagir</li>
+                    <li>• <strong className="text-orange-400">API publique</strong> : Potentiel d'intégration ou de concurrence</li>
+                    <li>• <strong className="text-yellow-400">Browser Extension</strong> : Ils développent une extension similaire à la nôtre</li>
+                </ul>
             </div>
         </div>
     );
