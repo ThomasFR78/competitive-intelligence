@@ -1421,9 +1421,14 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
 
     // Calculer les stats de précision par source (comparateur/marchand)
     const calculatePrecision = (offer) => {
-        if (!offer.displayed_price || !offer.lastCheck?.checkout_price) return null;
-        const diff = offer.lastCheck.checkout_price - offer.displayed_price;
-        const pct = (diff / offer.displayed_price * 100);
+        // Prix affiché: depuis l'offre OU depuis le dernier relevé (reference_price)
+        const displayedPrice = offer.displayed_price || offer.lastCheck?.reference_price;
+        // Prix checkout: prix PayPal ou Carte depuis price_checks (checkout_price pour démo)
+        const checkoutPrice = offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price;
+
+        if (!displayedPrice || !checkoutPrice) return null;
+        const diff = checkoutPrice - displayedPrice;
+        const pct = (diff / displayedPrice * 100);
         return { diff, pct, isAccurate: Math.abs(pct) < 2 };
     };
 
@@ -1536,10 +1541,10 @@ function PriceChecker({ selectedGame, setSelectedGame }) {
                                                         <a href={offer.url} target="_blank" className="text-xs text-accent-blue hover:underline truncate block max-w-xs">{offer.url}</a>
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-mono">
-                                                        {offer.displayed_price ? `${offer.displayed_price.toFixed(2)}€` : '-'}
+                                                        {(offer.displayed_price || offer.lastCheck?.reference_price) ? `${(offer.displayed_price || offer.lastCheck?.reference_price).toFixed(2)}€` : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-mono">
-                                                        {offer.lastCheck?.checkout_price ? `${offer.lastCheck.checkout_price.toFixed(2)}€` : '-'}
+                                                        {(offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price) ? `${(offer.lastCheck?.price_paypal || offer.lastCheck?.price_card || offer.lastCheck?.checkout_price).toFixed(2)}€` : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
                                                         {precision ? (
