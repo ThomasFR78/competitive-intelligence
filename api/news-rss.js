@@ -15,40 +15,72 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // RSS Feed sources
+    // RSS Feed sources - using rss2json.com as proxy to avoid CORS/blocking
     const RSS_FEEDS = [
-        { name: 'GG.deals', url: 'https://gg.deals/feed/', logo: '🟢' },
+        { name: 'GG.deals', url: 'https://gg.deals/news/feed/', logo: '🟢' },
         { name: 'AllKeyShop', url: 'https://blog.allkeyshop.com/feed/', logo: '🔵' },
         { name: 'IsThereAnyDeal', url: 'https://isthereanydeal.com/rss/specials/', logo: '🟡' },
-        // Add more feeds as needed
     ];
+
+    // rss2json.com API (free tier: 10k requests/day)
+    const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
     try {
         const allArticles = [];
 
-        // Fetch all RSS feeds in parallel
+        // Fetch all RSS feeds in parallel using rss2json proxy
         const feedPromises = RSS_FEEDS.map(async (feed) => {
             try {
-                const response = await fetch(feed.url, {
-                    headers: {
-                        'User-Agent': 'CI-Bot/1.0 (Competitive Intelligence Feed Reader)'
-                    }
-                });
+                // Use rss2json.com as a proxy
+                const proxyUrl = `${RSS2JSON_API}${encodeURIComponent(feed.url)}`;
+                const response = await fetch(proxyUrl);
 
                 if (!response.ok) {
                     console.error(`Failed to fetch ${feed.name}: ${response.status}`);
-                    return [];
+                    // Fallback to direct fetch
+                    return await fetchDirectRSS(feed);
                 }
 
-                const xml = await response.text();
-                const articles = parseRSS(xml, feed.name, feed.logo);
-                return articles;
+                const data = await response.json();
+
+                if (data.status !== 'ok' || !data.items) {
+                    console.error(`RSS2JSON error for ${feed.name}:`, data.message);
+                    return await fetchDirectRSS(feed);
+                }
+
+                // Map rss2json response to our format
+                return data.items.map(item => ({
+                    id: `${feed.name}-${item.guid || item.link}`.substring(0, 50),
+                    source: feed.name,
+                    logo: feed.logo,
+                    title: item.title || '',
+                    url: item.link || '',
+                    description: (item.description || '').replace(/<[^>]+>/g, '').substring(0, 200),
+                    publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString()
+                }));
 
             } catch (error) {
                 console.error(`Error fetching ${feed.name}:`, error.message);
                 return [];
             }
         });
+
+        // Fallback direct RSS fetch function
+        async function fetchDirectRSS(feed) {
+            try {
+                const response = await fetch(feed.url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (compatible; CI-Bot/1.0)',
+                        'Accept': 'application/rss+xml, application/xml, text/xml'
+                    }
+                });
+                if (!response.ok) return [];
+                const xml = await response.text();
+                return parseRSS(xml, feed.name, feed.logo);
+            } catch (e) {
+                return [];
+            }
+        }
 
         const results = await Promise.all(feedPromises);
         results.forEach(articles => allArticles.push(...articles));
